@@ -1,0 +1,54 @@
+name: 更新 STRC 监控数据
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # 每 30 分钟（UTC），GitHub 繁忙时可能会晚几分钟
+  workflow_dispatch: {}      # 也可以在 Actions 页面手动运行
+
+permissions:
+  contents: write   # 把 data/ 的更新提交回仓库
+  issues: write     # 出现新信号时开 Issue 提醒
+  pages: write      # 数据更新后请求 GitHub Pages 重新构建
+
+concurrency:
+  group: strc-monitor-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 读取 SEC 文件和行情，生成 data/latest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SEC_CONTACT: ${{ secrets.SEC_CONTACT || vars.SEC_CONTACT }}
+        run: python scripts/update.py
+
+      - name: 有变化时提交
+        id: commit
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "没有变化"
+          else
+            git commit -m "更新监控数据 $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git pull --rebase --autostash
+            git push
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 请求 GitHub Pages 重新构建
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" || echo "请求失败也没关系，GitHub 一般会自动重新构建"

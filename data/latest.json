@@ -1,0 +1,230 @@
+{
+ "weekly": {
+  "acc": "0001193125-26-462151",
+  "filingDate": "2026-11-16",
+  "asOf": "2026-11-15",
+  "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526462151/mstr-20261116.htm",
+  "usdReserve": 47.5,
+  "usdCash": 1.512,
+  "buybackRemaining": 3.322
+ },
+ "btcHoldings": 850849.0,
+ "prefs": {
+  "STRF": {
+   "shares": 12840000,
+   "notional": 12.84
+  },
+  "STRC": {
+   "shares": 77647490,
+   "notional": 77.65
+  },
+  "STRE": {
+   "shares": 7750000,
+   "notional": 8.84
+  },
+  "STRK": {
+   "shares": 14021000,
+   "notional": 14.02
+  },
+  "STRD": {
+   "shares": 14024000,
+   "notional": 14.02
+  }
+ },
+ "strc": {
+  "rate": 12.0,
+  "rateFrom": "2026-11-01",
+  "rateThrough": "2026-11-30",
+  "price": 93.6,
+  "priceDate": "2026-11-20"
+ },
+ "dividends": {
+  "STRC": {
+   "declaredThrough": "2026-12-31",
+   "status": "ok"
+  },
+  "STRF": {
+   "declaredThrough": "2026-12-31",
+   "status": "ok"
+  },
+  "STRK": {
+   "declaredThrough": "2026-12-31",
+   "status": "ok"
+  },
+  "STRD": {
+   "declaredThrough": "2026-12-31",
+   "status": "ok"
+  },
+  "STRE": {
+   "declaredThrough": "2026-12-31",
+   "status": "ok"
+  }
+ },
+ "buybackLowSince": null,
+ "rateEvents": [
+  {
+   "from": "2026-11-01",
+   "through": "2026-11-30",
+   "rate": 12.0,
+   "filingDate": "2026-10-16",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526423400/mstr-20261015.htm"
+  },
+  {
+   "from": "2026-12-01",
+   "through": "2026-12-31",
+   "rate": 12.0,
+   "filingDate": "2026-11-16",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526462151/mstr-20261116.htm"
+  }
+ ],
+ "history": [
+  {
+   "asOf": "2026-10-04",
+   "btcHoldings": 848000.0,
+   "usdReserve": 48.8,
+   "usdCash": 8.334,
+   "buybackRemaining": 6.209,
+   "strcRepurchased": 1033168.0,
+   "strcSold": 0
+  },
+  {
+   "asOf": "2026-10-11",
+   "btcHoldings": 848250.0,
+   "usdReserve": 48.8,
+   "usdCash": 6.405,
+   "buybackRemaining": 3.548,
+   "strcRepurchased": 1932145.0,
+   "strcSold": 0
+  },
+  {
+   "asOf": "2026-10-18",
+   "btcHoldings": 848517.0,
+   "usdReserve": 48.3,
+   "usdCash": 4.473,
+   "buybackRemaining": 11.6,
+   "strcRepurchased": 1938780.0,
+   "strcSold": 0
+  },
+  {
+   "asOf": "2026-10-25",
+   "btcHoldings": 848517.0,
+   "usdReserve": 48.3,
+   "usdCash": 2.424,
+   "buybackRemaining": 9.568,
+   "strcRepurchased": 2068459.0,
+   "strcSold": null
+  },
+  {
+   "asOf": "2026-11-01",
+   "btcHoldings": 849327.0,
+   "usdReserve": 47.9,
+   "usdCash": 1.327,
+   "buybackRemaining": 7.486,
+   "strcRepurchased": 2092035.0,
+   "strcSold": 0
+  },
+  {
+   "asOf": "2026-11-08",
+   "btcHoldings": 850364.0,
+   "usdReserve": 47.7,
+   "usdCash": 1.462,
+   "buybackRemaining": 5.603,
+   "strcRepurchased": 1887464.0,
+   "strcSold": 0
+  },
+  {
+   "asOf": "2026-11-15",
+   "btcHoldings": 850849.0,
+   "usdReserve": 47.5,
+   "usdCash": 1.512,
+   "buybackRemaining": 3.322,
+   "strcRepurchased": 2282510.0,
+   "strcSold": 0
+  }
+ ],
+ "latest8K": {
+  "acc": "0001193125-26-462151",
+  "date": "2026-11-16",
+  "form": "8-K",
+  "items": "7.01,8.01",
+  "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526462151/mstr-20261116.htm"
+ },
+ "recentFilings": [
+  {
+   "acc": "0001193125-26-462151",
+   "date": "2026-11-16",
+   "form": "8-K",
+   "items": "7.01,8.01",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526462151/mstr-20261116.htm"
+  },
+  {
+   "acc": "0001193125-26-455407",
+   "date": "2026-11-10",
+   "form": "3",
+   "items": "",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526455407/xslF345X06/ownership.xml"
+  },
+  {
+   "acc": "0001193125-26-452693",
+   "date": "2026-11-09",
+   "form": "8-K",
+   "items": "7.01,8.01",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526452693/mstr-20261109.htm"
+  },
+  {
+   "acc": "0001193125-26-451813",
+   "date": "2026-11-06",
+   "form": "4",
+   "items": "",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526451813/xslF345X06/ownership.xml"
+  },
+  {
+   "acc": "0001193125-26-447181",
+   "date": "2026-11-04",
+   "form": "4",
+   "items": "",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526447181/xslF345X06/ownership.xml"
+  },
+  {
+   "acc": "0001959173-26-007714",
+   "date": "2026-11-04",
+   "form": "144",
+   "items": "",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000195917326007714/xsl144X01/primary_doc.xml"
+  },
+  {
+   "acc": "0001959173-26-007707",
+   "date": "2026-11-03",
+   "form": "144",
+   "items": "",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000195917326007707/xsl144X01/primary_doc.xml"
+  },
+  {
+   "acc": "0001193125-26-443929",
+   "date": "2026-11-03",
+   "form": "FWP",
+   "items": "",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526443929/fwp_nov._2_2026.htm"
+  },
+  {
+   "acc": "0001050446-26-000060",
+   "date": "2026-11-02",
+   "form": "10-Q",
+   "items": "",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000105044626000060/mstr-20260930.htm"
+  },
+  {
+   "acc": "0001193125-26-442833",
+   "date": "2026-11-02",
+   "form": "424B5",
+   "items": "",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526442833/d124693d424b5.htm"
+  }
+ ],
+ "items": [],
+ "secBaseline": "2026-11-16",
+ "warnings": [],
+ "version": "c7d493d50157",
+ "checkedDate": "2026-11-21",
+ "generatedAt": "2026-11-21T15:49:34Z"
+}
