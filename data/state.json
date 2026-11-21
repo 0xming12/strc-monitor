@@ -1,0 +1,463 @@
+{
+ "coverageTier": "green",
+ "notified": {},
+ "parsed": {
+  "0001050446-26-000047": {},
+  "0001193125-26-409863": {
+   "declared": {
+    "STRC": "2026-10-31"
+   }
+  },
+  "0001193125-26-413164": {
+   "asOf": "2026-10-04",
+   "atm": {
+    "MSTR": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRC": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRD": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    }
+   },
+   "btc": {
+    "holdings": 848000.0,
+    "purchased": 0,
+    "sold": 0
+   },
+   "buybackRemaining": 6.209,
+   "repurchases": {
+    "MSTR": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRC": {
+     "amount": 102.6,
+     "shares": 1033168.0
+    },
+    "STRD": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "amount": 0,
+     "shares": 0
+    }
+   },
+   "reserveUses": [
+    {
+     "amount": 1.425,
+     "purpose": "dividends on its preferred stock and interest on its outstanding indebtedness"
+    }
+   ],
+   "usdCash": 8.334,
+   "usdReserve": 48.8
+  },
+  "0001193125-26-419726": {
+   "asOf": "2026-10-11",
+   "atm": {
+    "MSTR": {
+     "net": 21.0,
+     "notional": 0,
+     "shares": 125183.0
+    },
+    "STRC": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRD": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    }
+   },
+   "btc": {
+    "holdings": 848250.0,
+    "purchased": 250.0,
+    "sold": 0
+   },
+   "buybackRemaining": 3.548,
+   "repurchases": {
+    "MSTR": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRC": {
+     "amount": 192.4,
+     "shares": 1932145.0
+    },
+    "STRD": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "amount": 0,
+     "shares": 0
+    }
+   },
+   "usdCash": 6.405,
+   "usdReserve": 48.8
+  },
+  "0001193125-26-423400": {
+   "declared": {
+    "STRC": "2026-11-30"
+   },
+   "strcRate": {
+    "from": "2026-11-01",
+    "rate": 12.0,
+    "through": "2026-11-30"
+   }
+  },
+  "0001193125-26-424688": {
+   "asOf": "2026-10-18",
+   "atm": {
+    "MSTR": {
+     "net": 22.0,
+     "notional": 0,
+     "shares": 140872.0
+    },
+    "STRC": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRD": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    }
+   },
+   "btc": {
+    "holdings": 848517.0,
+    "purchased": 267.0,
+    "sold": 0
+   },
+   "buybackRemaining": 11.6,
+   "repurchases": {
+    "MSTR": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRC": {
+     "amount": 193.1,
+     "shares": 1938780.0
+    },
+    "STRD": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "amount": 0,
+     "shares": 0
+    }
+   },
+   "reserveUses": [
+    {
+     "amount": 0.455,
+     "purpose": "the payment of dividends on its preferred stock"
+    }
+   ],
+   "usdCash": 4.473,
+   "usdReserve": 48.3
+  },
+  "0001193125-26-431146": {
+   "asOf": "2026-10-25",
+   "atm": {},
+   "btc": {
+    "holdings": 848517.0,
+    "purchased": 0,
+    "sold": 0
+   },
+   "buybackRemaining": 9.568,
+   "repurchases": {
+    "MSTR": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRC": {
+     "amount": 204.9,
+     "shares": 2068459.0
+    },
+    "STRD": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "amount": 0,
+     "shares": 0
+    }
+   },
+   "usdCash": 2.424,
+   "usdReserve": 48.3
+  },
+  "0001193125-26-435451": {},
+  "0001193125-26-437776": {},
+  "0001193125-26-442707": {
+   "asOf": "2026-11-01",
+   "atm": {
+    "MSTR": {
+     "net": 164.0,
+     "notional": 0,
+     "shares": 1178552.0
+    },
+    "STRC": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRD": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    }
+   },
+   "btc": {
+    "holdings": 849327.0,
+    "purchased": 811.0,
+    "sold": 0
+   },
+   "buybackRemaining": 7.486,
+   "repurchases": {
+    "MSTR": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRC": {
+     "amount": 208.2,
+     "shares": 2092035.0
+    },
+    "STRD": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "amount": 0,
+     "shares": 0
+    }
+   },
+   "reserveUses": [
+    {
+     "amount": 0.434,
+     "purpose": "the payment of dividends on its preferred stock"
+    }
+   ],
+   "usdCash": 1.327,
+   "usdReserve": 47.9
+  },
+  "0001193125-26-452693": {
+   "asOf": "2026-11-08",
+   "atm": {
+    "MSTR": {
+     "net": 283.8,
+     "notional": 0,
+     "shares": 2051348.0
+    },
+    "STRC": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRD": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    }
+   },
+   "btc": {
+    "holdings": 850364.0,
+    "purchased": 1036.0,
+    "sold": 0
+   },
+   "buybackRemaining": 5.603,
+   "repurchases": {
+    "MSTR": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRC": {
+     "amount": 188.3,
+     "shares": 1887464.0
+    },
+    "STRD": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "amount": 0,
+     "shares": 0
+    }
+   },
+   "reserveUses": [
+    {
+     "amount": 0.211,
+     "purpose": "the payment of dividends on its preferred stock"
+    }
+   ],
+   "usdCash": 1.462,
+   "usdReserve": 47.7
+  },
+  "0001193125-26-462151": {
+   "asOf": "2026-11-15",
+   "atm": {
+    "MSTR": {
+     "net": 244.7,
+     "notional": 0,
+     "shares": 2087040.0
+    },
+    "STRC": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRD": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    }
+   },
+   "btc": {
+    "holdings": 850849.0,
+    "purchased": 485.0,
+    "sold": 0
+   },
+   "buybackRemaining": 3.322,
+   "declared": {
+    "STRC": "2026-12-31",
+    "STRD": "2026-12-31",
+    "STRE": "2026-12-31",
+    "STRF": "2026-12-31",
+    "STRK": "2026-12-31"
+   },
+   "repurchases": {
+    "MSTR": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRC": {
+     "amount": 228.1,
+     "shares": 2282510.0
+    },
+    "STRD": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "amount": 0,
+     "shares": 0
+    }
+   },
+   "reserveUses": [
+    {
+     "amount": 0.189,
+     "purpose": "the payment of dividends on its preferred stock"
+    }
+   ],
+   "strcRate": {
+    "from": "2026-12-01",
+    "rate": 12.0,
+    "through": "2026-12-31"
+   },
+   "usdCash": 1.512,
+   "usdReserve": 47.5
+  }
+ },
+ "parserVersion": 3,
+ "reserveTier": "green",
+ "usdtBad": false
+}

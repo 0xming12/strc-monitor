@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STRC 持仓监控</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #fff; --text: #1f2937; --muted: #6b7280; --border: #e5e7eb;
+    --green: #166534; --green-bg: #dcfce7; --green-solid: #16a34a;
+    --yellow: #854d0e; --yellow-bg: #fef9c3; --yellow-solid: #eab308;
+    --orange: #9a3412; --orange-bg: #ffedd5; --orange-solid: #ea580c;
+    --red: #991b1b; --red-bg: #fee2e2; --red-solid: #dc2626;
+    --link: #1d4ed8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--link); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; }
+  header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  h1 { font-size: 24px; margin: 0; }
+  h2 { font-size: 18px; margin: 0 0 10px; }
+  h3 { font-size: 15px; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sub { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12.5px; }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { background: #f9fafb; }
+  button:disabled { opacity: .6; cursor: default; }
+  button.primary { background: #111827; color: #fff; border-color: #111827; }
+  button.primary:hover { background: #374151; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .grid .card { margin-bottom: 0; }
+  .big { font-size: 28px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .mid { font-size: 20px; font-weight: 700; line-height: 1.3; font-variant-numeric: tabular-nums; }
+  .sep { border-top: 1px solid var(--border); margin: 12px 0 10px; }
+  .chip { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chip.green { color: var(--green); background: var(--green-bg); }
+  .chip.yellow { color: var(--yellow); background: var(--yellow-bg); }
+  .chip.orange { color: var(--orange); background: var(--orange-bg); }
+  .chip.red { color: var(--red); background: var(--red-bg); }
+  .chip.gray { color: #374151; background: #f3f4f6; }
+  .status { border-width: 2px; }
+  .status.green { border-color: var(--green-solid); }
+  .status.yellow { border-color: var(--yellow-solid); }
+  .status.orange { border-color: var(--orange-solid); }
+  .status.red { border-color: var(--red-solid); }
+  .status-head { display: flex; gap: 14px; align-items: center; }
+  .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; height: 64px; border-radius: 14px; font-size: 22px; font-weight: 800; color: #fff; padding: 0 10px; background: #9ca3af; flex: none; }
+  .badge.green { background: var(--green-solid); }
+  .badge.yellow { background: var(--yellow-solid); color: #422006; }
+  .badge.orange { background: var(--orange-solid); }
+  .badge.red { background: var(--red-solid); }
+  .status-title { font-size: 18px; font-weight: 700; }
+  ul.reasons, ul.hints { margin: 10px 0 0; padding-left: 20px; }
+  ul.reasons:empty, ul.hints:empty { display: none; }
+  ul.hints li { color: var(--muted); }
+  .banner { background: var(--yellow-bg); color: var(--yellow); border: 1px solid #fde68a; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; }
+  .hidden { display: none !important; }
+  .gauge { position: relative; height: 10px; border-radius: 6px; margin: 14px 0 26px; }
+  .gauge .marker { position: absolute; top: -5px; width: 4px; height: 20px; background: #111827; border-radius: 2px; transform: translateX(-2px); }
+  .gauge .tick { position: absolute; top: 13px; font-size: 11px; color: var(--muted); transform: translateX(-50%); white-space: nowrap; }
+  .gauge .tick.end { transform: translateX(-100%); }
+  .g-cov { background: linear-gradient(to right, var(--red-solid) 0 25%, var(--orange-solid) 25% 33.33%, var(--yellow-solid) 33.33% 50%, var(--green-solid) 50% 100%); }
+  .g-res { background: linear-gradient(to right, var(--orange-solid) 0 25%, var(--yellow-solid) 25% 50%, var(--green-solid) 50% 100%); }
+  table.ladder { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ladder td { padding: 3px 0; vertical-align: top; }
+  .ladder td:last-child { text-align: right; white-space: nowrap; padding-left: 8px; }
+  .ladder tr.ref td { color: var(--muted); }
+  .tbl-wrap { overflow-x: auto; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tbl th, .tbl td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .tbl th { font-size: 12.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .tbl tr.total td { font-weight: 600; }
+  .events-group { margin-top: 12px; }
+  label.ev { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; margin: 6px 0; cursor: pointer; }
+  label.ev input { margin-top: 5px; width: 16px; height: 16px; flex: none; }
+  label.ev.on.yellow { background: var(--yellow-bg); border-color: #fde68a; }
+  label.ev.on.orange { background: var(--orange-bg); border-color: #fdba74; }
+  label.ev.on.red { background: var(--red-bg); border-color: #fca5a5; }
+  .ev .how { display: block; font-size: 12.5px; color: var(--muted); }
+  .ev .note { display: block; font-size: 12.5px; color: #1e40af; }
+  .ev .note:empty { display: none; }
+  .tag { display: inline-block; font-size: 11.5px; line-height: 1.5; padding: 0 6px; border-radius: 4px; margin-right: 6px; background: #f3f4f6; color: #374151; }
+  .tag.auto { background: #dbeafe; color: #1e40af; }
+  .tag.semi { background: #ede9fe; color: #5b21b6; }
+  .filing { border: 1px solid var(--border); border-left-width: 4px; border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
+  .filing.yellow { border-left-color: var(--yellow-solid); }
+  .filing.orange { border-left-color: var(--orange-solid); }
+  .filing.red { border-left-color: var(--red-solid); }
+  .filing.gray { border-left-color: #9ca3af; }
+  .filing ul { margin: 6px 0; padding-left: 18px; font-size: 13.5px; }
+  .filing button { font-size: 13px; padding: 4px 10px; }
+  details > summary { cursor: pointer; font-weight: 600; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .field > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .help { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  input[type=number], input[type=date], input[type=text], select { font: inherit; width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row input[type=number] { width: auto; flex: 1; min-width: 140px; }
+  .tbl input[type=number] { width: 110px; }
+  .tbl input[type=date] { width: 160px; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 600; margin-bottom: 4px; cursor: pointer; }
+  .check input { width: 16px; height: 16px; }
+  ol.steps { margin: 6px 0 0; padding-left: 20px; }
+  footer { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+  footer p { margin: 4px 0; }
+  @media (max-width: 560px) {
+    .big { font-size: 24px; }
+    .badge { min-width: 54px; height: 54px; font-size: 18px; }
+    .card { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>STRC 持仓监控</h1>
+      <p class="sub">按分红、BTC 覆盖倍数和管理层行为分级预警。数据只保存在这个浏览器里，不会上传。不构成投资建议。</p>
+    </div>
+    <button id="btnRefresh" class="primary" type="button">刷新</button>
+  </header>
+
+  <div id="staleBanner" class="banner hidden"></div>
+
+  <section id="statusCard" class="card status">
+    <div class="status-head">
+      <div id="statusBadge" class="badge">…</div>
+      <div>
+        <div id="statusTitle" class="status-title">计算中…</div>
+        <div id="statusAction"></div>
+        <div id="marketLine" class="small muted"></div>
+      </div>
+    </div>
+    <ul id="statusReasons" class="reasons"></ul>
+    <ul id="statusHints" class="hints"></ul>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h3>BTC 价格</h3>
+      <div id="btcPrice" class="big">—</div>
+      <div id="btcSrc" class="small muted"></div>
+      <div id="btcWeekly" class="small" style="margin-top:6px"></div>
+      <div class="sep"></div>
+      <h3>USDT <span id="usdtChip" class="chip gray">—</span></h3>
+      <div id="usdtPrice" class="mid">—</div>
+      <div id="usdtInfo" class="small muted"></div>
+    </section>
+
+    <section class="card">
+      <h3>BTC 覆盖倍数 <span id="covChip" class="chip gray">—</span></h3>
+      <div id="covValue" class="big">—</div>
+      <div id="covBasis" class="small muted"></div>
+      <div class="gauge g-cov">
+        <span class="marker" id="covMarker"></span>
+        <span class="tick" style="left:25%">1.5x</span>
+        <span class="tick" style="left:33.33%">2x</span>
+        <span class="tick" style="left:50%">3x</span>
+        <span class="tick end" style="left:100%">6x+</span>
+      </div>
+      <table class="ladder"><tbody id="covLadder"></tbody></table>
+      <div id="covShift" class="small muted" style="margin-top:6px"></div>
+    </section>
+
+    <section class="card">
+      <h3>美元资产覆盖 <span id="resChip" class="chip gray">—</span></h3>
+      <div id="resValue" class="big">—</div>
+      <div id="resBasis" class="small muted"></div>
+      <div class="gauge g-res">
+        <span class="marker" id="resMarker"></span>
+        <span class="tick" style="left:25%">12 个月</span>
+        <span class="tick" style="left:50%">24 个月</span>
+        <span class="tick end" style="left:100%">48+</span>
+      </div>
+      <div id="resProj" class="small"></div>
+    </section>
+
+    <section class="card">
+      <h3>STRC 分红 <span id="divChip" class="chip gray">—</span></h3>
+      <div id="strcRateBig" class="big">—</div>
+      <div id="strcInfo" class="small"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>量化信号</h2>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>指标</th><th>现在</th><th>黄</th><th>橙</th><th>红</th><th>状态</th></tr></thead>
+        <tbody id="quantBody"></tbody>
+      </table>
+    </div>
+    <p class="small muted">BTC 价格线按最近两个周线收盘（UTC 周日）判断，两周都低于才算触发，避免被插针误触发。</p>
+  </section>
+
+  <section class="card">
+    <h2 id="secTitle">SEC 文件监控（自动）</h2>
+    <div id="secStatus" class="small muted"></div>
+    <div id="secPending"></div>
+    <details id="secDoneBox" class="hidden" style="margin-top:10px">
+      <summary>已处理的文件（<span id="secDoneCount">0</span>）</summary>
+      <div id="secDone"></div>
+    </details>
+    <details style="margin-top:10px">
+      <summary>最近 10 份 SEC 文件</summary>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>日期</th><th>类型</th><th>8-K 事项</th><th></th></tr></thead>
+          <tbody id="secRecent"></tbody>
+        </table>
+      </div>
+    </details>
+    <p class="small muted" id="secNote">页面每 30 分钟从 SEC 读一次 Strategy 的文件列表。出现 8-K Item 1.03（破产）、2.04（债务加速到期）、4.02（财报重述）会直接按红色处理；Item 4.01、1.05、2.03、3.03、5.03 和股东大会代理声明会列在这里等你确认。浏览器读不到 8-K 正文，所以周报里的数字仍要手动填。</p>
+  </section>
+
+  <section class="card">
+    <h2>事件信号</h2>
+    <p class="small muted">标着“自动”的由页面直接勾选，“半自动”的会提醒你确认，“手动”的要你自己看公告。勾错了可以取消。两个黄色同时出现，按橙色处理。</p>
+    <div id="eventsBox"></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>不算卖出信号的情况</summary>
+      <p class="small muted">只要上面的指标都正常，下面这些不用动：</p>
+      <ul>
+        <li>STRC 跌到 80 多甚至 70 多（2026 年 6 月就是这样）</li>
+        <li>MSTR 暴跌、mNAV 低于 1、被 MSCI 剔除</li>
+        <li>Strategy 卖 BTC 付股息，或低价回购 STRC（低价回购会提高覆盖倍数）</li>
+        <li>可转债被回售，用卖币或发普通股还掉（排在 STRC 前面的债变少）</li>
+        <li>STRC 在 100 美元以上时降息（正常的利率调节，只影响收益率）</li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>时间表</h2>
+    <ul id="calendarList"></ul>
+    <h3 style="margin-top:12px">可转债回售</h3>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>回售日</th><th>债券</th><th>金额</th><th>剩余</th><th>全靠卖币需卖出</th><th>转股价</th></tr></thead>
+        <tbody id="putBody"></tbody>
+      </table>
+    </div>
+    <p class="small muted">转股价远高于 MSTR 现价时，持有人基本都会选择回售。按董事会政策，美元储备只能付股息和利息，不能还本金。</p>
+  </section>
+
+  <section class="card">
+    <h2>更新数据</h2>
+    <p id="autoFillNote" class="small hidden" style="background:#dbeafe;color:#1e40af;border-radius:8px;padding:8px 12px"></p>
+    <details open id="manualSteps">
+      <summary>每周一对照 Strategy 的 8-K 更新（约 2 分钟）</summary>
+      <ol class="steps small">
+        <li>打开 <a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=1050446&amp;type=8-K" target="_blank" rel="noopener noreferrer">SEC EDGAR 上 Strategy 的 8-K 列表</a>，点开最新一份。</li>
+        <li>“BTC Update” 表里的 Aggregate BTC Holdings，填到“BTC 持仓”。</li>
+        <li>“USD Reserve and USD Cash Updates” 一段，填美元储备和美元现金。$4.75 billion 就是 47.5 亿，$151.2 million 就是 1.51 亿。</li>
+        <li>“Repurchase Program Updates” 表里 STRC 的 Shares Repurchased，填到下面的“本周 STRC 回购股数”，再点“从 STRC 面值扣除”。同一段里 remains available 的金额，填到“优先股回购剩余额度”。</li>
+        <li>“Dividend Rate” 和 “Cash Dividend Declaration” 两段，确认 STRC 下个月的利率和分红有没有按时宣告。</li>
+        <li>最后把“数据截至”改成 8-K 里的截止日期。看到新发债务、抵押借款或其他事件时，到上面的事件信号里勾选。</li>
+      </ol>
+    </details>
+
+    <div class="form-grid" style="margin-top:12px">
+      <div class="field"><label for="f_asOf">数据截至</label><input id="f_asOf" type="date" data-key="asOf"></div>
+      <div class="field"><label for="f_btcHoldings">BTC 持仓（枚）</label><input id="f_btcHoldings" type="number" step="1" min="0" data-key="btcHoldings"></div>
+      <div class="field"><label for="f_usdReserve">美元储备 USD Reserve（亿美元）</label><input id="f_usdReserve" type="number" step="0.01" min="0" data-key="usdReserve"></div>
+      <div class="field"><label for="f_usdCash">美元现金 USD Cash（亿美元）</label><input id="f_usdCash" type="number" step="0.01" min="0" data-key="usdCash"></div>
+      <div class="field"><label for="f_buyback">优先股回购剩余额度（亿美元）</label><input id="f_buyback" type="number" step="0.01" min="0" data-key="buybackRemaining"></div>
+      <div class="field">
+        <label for="f_strcPrice">STRC 价格（美元）</label><input id="f_strcPrice" type="number" step="0.01" min="0" data-key="strcPrice">
+        <div class="help">只用来算实际收益率和回购提醒，不参与级别判断。</div>
+      </div>
+      <div class="field">
+        <label for="f_div">最新一次 STRC 分红宣告</label>
+        <select id="f_div" data-key="dividendStatus">
+          <option value="ok">按时宣告、足额支付</option>
+          <option value="late">没有按时宣告</option>
+          <option value="partial">只宣告或只付了一部分</option>
+          <option value="arrears">出现欠息</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f_newSenior">新增排在 STRC 前面的债权（亿美元）</label><input id="f_newSenior" type="number" step="0.1" min="0" data-key="newSenior">
+        <div class="help">新发的债、抵押借款等。新发 STRF 直接改下面 STRF 的面值。</div>
+      </div>
+    </div>
+
+    <div class="form-grid" style="margin-top:12px">
+      <div class="field">
+        <label for="f_buybackShares">本周 STRC 回购股数</label>
+        <div class="row">
+          <input id="f_buybackShares" type="number" step="1" min="0" placeholder="例如 2282510">
+          <button type="button" id="btnApplyBuyback">从 STRC 面值扣除</button>
+        </div>
+        <div class="help" id="buybackMsg">每股按 100 美元面值扣除。</div>
+      </div>
+      <div class="field">
+        <label class="check" for="f_manualBtc"><input type="checkbox" id="f_manualBtc" data-key="manualBtc"> 使用手动 BTC 价格（美元）</label>
+        <input id="f_btcManual" type="number" step="1" min="0" data-key="btcManualPrice" aria-label="手动 BTC 价格">
+        <div class="help">行情接口失败时用，也可以用来测算“BTC 跌到某个价位会怎样”。勾选后所有判断都按这个价格。</div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:16px">资本结构（亿美元）</h3>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>可转债</th><th>本金</th><th>票息 %</th><th>回售日</th><th>转股价（美元）</th></tr></thead>
+        <tbody id="convBody"></tbody>
+      </table>
+    </div>
+    <div class="tbl-wrap" style="margin-top:10px">
+      <table class="tbl">
+        <thead><tr><th>优先股</th><th>面值</th><th>年股息率 %</th><th>相对 STRC</th></tr></thead>
+        <tbody id="prefBody"></tbody>
+      </table>
+    </div>
+    <p class="small muted" id="capSummary"></p>
+    <button type="button" id="btnReset">恢复默认数据</button>
+  </section>
+
+  <footer>
+    <p>默认数据：Strategy 2026-11-16 的 8-K（截至 11 月 15 日）、STRC 投资者简报（2026-11-08）、Q2 2026 10-Q 的可转债条款。STRE 按欧元面值折算，是约数。</p>
+    <p>行情：BTC 和 USDT 价格来自 Coinbase，失败时改用 CoinGecko，页面打开时每 5 分钟刷新一次。放在 GitHub Pages 上时，8-K 里的数字、STRC 收盘价和自动检测由后台每 30 分钟更新一次（data/latest.json）；直接打开本地文件时，只能从 data.sec.gov 读文件列表，8-K 里的数字要手动填。</p>
+    <p>参考链接：<a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=1050446&amp;type=8-K" target="_blank" rel="noopener noreferrer">Strategy 8-K（SEC EDGAR）</a> · <a href="https://www.strategy.com/strc" target="_blank" rel="noopener noreferrer">Strategy STRC 页面</a> · <a href="https://assets.contentstack.io/v3/assets/bltf8d808d9b8cebd37/blt23d718fe5cf3132e/6af10580d5357a6f41630472/STRC_Investor_Briefing_As_of_2026-11-08.pdf" target="_blank" rel="noopener noreferrer">STRC 投资者简报（11/08）</a></p>
+    <p>覆盖倍数 = BTC 持仓 × BTC 价格 ÷（可转债 + 新增优先债权 + STRF + STRC − 美元储备 − 美元现金），与 Strategy 公布的 STRC “BTC Rating” 口径一致。以上不构成投资建议。</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'strcMonitor.v1';
+  var MARKET_KEY = 'strcMonitor.market.v1';
+  // 2026-11-15 排在 STRC 前面的债权：可转债 67.14 亿 + STRF 12.84 亿
+  var SENIOR_BASELINE = 79.98;
+  var REFRESH_MS = 5 * 60 * 1000;
+  var SEC_URL = 'https://data.sec.gov/submissions/CIK0001050446.json';
+  var SEC_DOC_BASE = 'https://www.sec.gov/Archives/edgar/data/1050446/';
+  // 这一天及以前的 SEC 文件已经算进默认数据，只监控之后的新文件
+  var SEC_BASELINE = '2026-11-16';
+  var SEC_REFRESH_MS = 30 * 60 * 1000;
+
+  var TIER_ORDER = { green: 0, yellow: 1, orange: 2, red: 3 };
+  var TIER_LABEL = { green: '安全', yellow: '黄色', orange: '橙色', red: '红色', gray: '未知' };
+  var TIER_ACTION = {
+    green: '继续持有，按计划检查',
+    yellow: '不加仓，提高检查频率',
+    orange: '减到原仓位一半以下',
+    red: '全部卖出，不等反弹'
+  };
+  var DIV_LABEL = {
+    ok: '按时宣告、足额支付',
+    late: '没有按时宣告',
+    partial: '只宣告或只付了一部分',
+    arrears: '出现欠息'
+  };
+  var WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+  var DEFAULTS = {
+    asOf: '2026-11-15',
+    btcHoldings: 850849,
+    usdReserve: 47.5,
+    usdCash: 1.51,
+    buybackRemaining: 3.32,
+    newSenior: 0,
+    strcPrice: 93.60,
+    dividendStatus: 'ok',
+    manualBtc: false,
+    btcManualPrice: 60000,
+    converts: [
+      { name: '2028 可转债', principal: 10.10, coupon: 0.625, put: '2027-09-15', conv: 183.19 },
+      { name: '2030B 可转债', principal: 20.00, coupon: 0, put: '2028-03-01', conv: 433.43 },
+      { name: '2029 可转债', principal: 15.00, coupon: 0, put: '2028-06-01', conv: 672.40 },
+      { name: '2030A 可转债', principal: 8.00, coupon: 0.625, put: '2028-09-15', conv: 149.77 },
+      { name: '2031 可转债', principal: 6.037, coupon: 0.875, put: '2028-09-15', conv: 232.72 },
+      { name: '2032 可转债', principal: 8.00, coupon: 2.25, put: '2029-06-15', conv: 204.33 }
+    ],
+    prefs: [
+      { key: 'STRF', notional: 12.84, rate: 10, rank: 'senior' },
+      { key: 'STRC', notional: 77.65, rate: 12, rank: 'self' },
+      { key: 'STRE', notional: 8.84, rate: 10, rank: 'junior' },
+      { key: 'STRK', notional: 14.02, rate: 8, rank: 'junior' },
+      { key: 'STRD', notional: 14.02, rate: 10, rank: 'junior' }
+    ],
+    events: {},
+    autoNotes: {},          // 自动勾选或确认的原因：{ 事件 id: { text, url } }
+    secReviews: {},         // 处理过的 SEC 文件：{ accessionNumber: 'auto' | 'confirmed' | 'dismissed' }
+    buybackLowSince: '',    // 回购额度第一次低于 0.5 亿美元的日期
+    buybackAutoTicked: '',
+    strcRateCommitted: 12,
+    btcHoldingsCommitted: 850849,
+    holdingsDrop: null
+  };
+
+  var EVENTS = [
+    { id: 'y_buyback', tier: 'yellow', text: 'STRC 回购额度用完后一个多月没有追加，且 STRC 低于 95 美元', how: '每周 8-K 的 Repurchase Program Updates 里写着剩余额度', mode: 'semi', autoText: '按你填的数字判断：额度低于 0.5 亿美元满 30 天、且 STRC 低于 95 美元时自动勾选', bMode: 'auto', bText: '后台按每周 8-K 的回购额度判断：低于 0.5 亿美元满 30 天、且 STRC 收盘低于 95 美元时自动勾选' },
+    { id: 'y_strd', tier: 'yellow', text: 'STRD 停发股息', how: 'STRD 非累积、排在 STRC 后面，停它不影响你的权利，但说明公司开始省现金', mode: 'manual', autoText: '要读 8-K 正文里的分红宣告', bMode: 'auto', bText: '后台读分红宣告，过了已宣告的期限还没有新宣告时自动勾选' },
+    { id: 'y_putplan', tier: 'yellow', text: '到 2027 年年中仍未公布 2027-09-15 那笔 10.1 亿美元回售怎么还，且 BTC 仍然低迷', how: '关注 2027 年上半年的 8-K 和财报', mode: 'semi', autoText: '到 2027 年 6 月底会提醒你，有没有方案要你判断', bMode: 'semi', bText: '到 2027 年 6 月底会提醒你；后台看到可转债回购、赎回的描述时也会提示' },
+    { id: 'o_pledge', tier: 'orange', text: '把 BTC 拿去抵押借钱', how: '会带回追保强平机制，抵押债权人也会排到 STRC 前面', mode: 'semi', autoText: '出现 8-K Item 2.03（新增债务）时提醒你确认', bMode: 'semi', bText: '出现 Item 2.03（新增债务）时提醒你确认，后台会附上正文里提到抵押的句子' },
+    { id: 'o_strk', tier: 'orange', text: 'STRK 延付股息', how: 'STRK 是累积的，延付说明现金紧张', mode: 'manual', autoText: '要读 8-K 正文里的分红宣告', bMode: 'auto', bText: '后台读分红宣告，过了已宣告的期限还没有新宣告时自动勾选' },
+    { id: 'o_ratecut', tier: 'orange', text: 'STRC 低于 100 美元时下调利率', how: '看每月 15 号左右的利率公告', mode: 'semi', autoText: '你在资本结构表里把 STRC 利率改低、且 STRC 价格低于 100 美元时自动勾选', bMode: 'auto', bText: '后台读每月的利率公告，STRC 收盘低于 100 美元时降息就自动勾选' },
+    { id: 'o_terms', tier: 'orange', text: '提议修改 STRC 条款，比如允许用股票代替现金付息', how: '股东投票或修改指定证书的公告', mode: 'semi', autoText: '出现 Item 3.03、5.03 或股东大会代理声明时提醒你确认', bMode: 'semi', bText: '出现 Item 3.03、5.03 或股东大会代理声明时提醒你确认' },
+    { id: 'o_issue', tier: 'orange', text: '在 100 美元以下增发 STRC', how: '每周 8-K 的 ATM 表里 STRC 的 Shares Sold', mode: 'manual', autoText: '要读 8-K 正文里的 ATM 表', bMode: 'semi', bText: '后台读每周 ATM 表，卖 STRC 每股净得低于 98.5 美元时提醒你确认' },
+    { id: 'o_reserve', tier: 'orange', text: '美元储备被挪去还本金、回购普通股等其他用途', how: '储备政策变更会有单独公告', mode: 'manual', autoText: '要读 8-K 正文', bMode: 'semi', bText: '后台读美元储备的用途和政策描述，出现付息以外的用途时提醒你确认' },
+    { id: 'o_tether', tier: 'orange', text: 'Tether 暂停 USDT 赎回', how: '真暂停赎回的话，USDT 很快会脱锚', mode: 'semi', autoText: 'USDT 价格已自动检查，暂停赎回本身要看新闻', bMode: 'semi', bText: 'USDT 价格已自动检查，暂停赎回本身要看新闻' },
+    { id: 'r_default', tier: 'red', text: '任何一笔可转债没有按时付息或付回售款', how: '可能触发交叉违约，其他可转债也可能被要求提前偿还', mode: 'auto', autoText: '出现 8-K Item 2.04（债务加速到期）时直接勾选', bMode: 'auto', bText: '出现 8-K Item 2.04（债务加速到期）时直接勾选' },
+    { id: 'r_restructure', tier: 'red', text: '聘请重组顾问，或传出债务重组、破产保护的消息', how: '', mode: 'semi', autoText: '破产申请（Item 1.03）直接勾选，聘请重组顾问要看新闻', bMode: 'semi', bText: '破产申请（Item 1.03）直接勾选，聘请重组顾问要看新闻' },
+    { id: 'r_custody', tier: 'red', text: 'BTC 托管出事（被盗、丢失）', how: '', mode: 'semi', autoText: 'Item 1.05（网络安全事件）会提醒你确认；你填的 BTC 持仓变少时也会提醒', bMode: 'semi', bText: 'Item 1.05（网络安全事件），或 BTC 持仓比披露的卖出量减少得多时，提醒你确认' },
+    { id: 'r_audit', tier: 'red', text: '财报重述或审计师辞任', how: '', mode: 'auto', autoText: 'Item 4.02（财报重述）直接勾选，Item 4.01（更换审计师）提醒你确认', bMode: 'auto', bText: 'Item 4.02（财报重述）直接勾选，Item 4.01（更换审计师）提醒你确认' }
+  ];
+  var MODE_LABEL = { auto: '自动', semi: '半自动', manual: '手动' };
+
+  // 8-K 事项编号。auto: true 的直接勾选对应事件，其余等你确认；tier 为 info 的只提示
+  var ITEM_RULES = {
+    '1.03': { tier: 'red', auto: true, ev: 'r_restructure', text: '破产或接管' },
+    '2.04': { tier: 'red', auto: true, ev: 'r_default', text: '触发债务加速到期或增加的事件，可能是可转债违约' },
+    '4.02': { tier: 'red', auto: true, ev: 'r_audit', text: '之前的财报不能再依赖，需要重述' },
+    '4.01': { tier: 'red', ev: 'r_audit', text: '更换审计师。如果是审计师辞任，按红色处理', confirm: '确认是审计师辞任' },
+    '1.05': { tier: 'red', ev: 'r_custody', text: '重大网络安全事件。如果涉及 BTC 托管，按红色处理', confirm: '确认涉及 BTC 托管' },
+    '2.03': { tier: 'orange', ev: 'o_pledge', text: '新增直接债务，排在 STRC 前面。用 BTC 抵押的按橙色处理；不管是不是抵押，都把金额填进“新增排在 STRC 前面的债权”', confirm: '确认是 BTC 抵押借款' },
+    '3.03': { tier: 'orange', ev: 'o_terms', text: '证券持有人的权利有变更，看是不是改了 STRC 的条款', confirm: '确认对 STRC 不利' },
+    '5.03': { tier: 'orange', ev: 'o_terms', text: '修改公司章程或优先股指定证书，看是不是改了 STRC 条款，或者新设了排在 STRC 前面的优先股', confirm: '确认对 STRC 不利' },
+    '3.01': { tier: 'info', text: '退市或不符合上市规则的通知' },
+    '2.01': { tier: 'info', text: '完成重大资产收购或出售，可能是大额卖币或并购' },
+    '5.01': { tier: 'info', text: '控制权变更。STRC 持有人可能有权按 100 美元加欠息要求回购' }
+  };
+  var FORM_RULES = {
+    'PRE 14A': { tier: 'orange', ev: 'o_terms', text: '股东大会初步代理声明，看议案是否涉及修改 STRC 条款', confirm: '确认对 STRC 不利' },
+    'DEF 14A': { tier: 'orange', ev: 'o_terms', text: '股东大会正式代理声明，看议案是否涉及修改 STRC 条款', confirm: '确认对 STRC 不利' },
+    'PREM14A': { tier: 'info', text: '并购相关的代理声明' },
+    'DEFM14A': { tier: 'info', text: '并购相关的代理声明' },
+    '25-NSE': { tier: 'info', text: '交易所提交的退市通知' },
+    '15-12B': { tier: 'info', text: '终止证券注册' }
+  };
+  var RULE_ORDER = { info: 0, yellow: 1, orange: 2, red: 3 };
+
+  // ---------- 工具函数 ----------
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function num(v) { var n = typeof v === 'number' ? v : parseFloat(v); return isFinite(n) ? n : 0; }
+  function sum(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function parseLocalDate(s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ''));
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+  function addMonths(date, n) {
+    var d = new Date(date.getTime());
+    var whole = Math.floor(n);
+    d.setMonth(d.getMonth() + whole);
+    d.setDate(d.getDate() + Math.round((n - whole) * 30));
+    return d;
+  }
+  function fmtUSD(v) { return isFinite(v) ? '$' + Math.round(v).toLocaleString('en-US') : '—'; }
+  function fmtYi(v) { return isFinite(v) ? v.toFixed(1) + ' 亿美元' : '—'; }
+  function fmtX(v) { return v === Infinity ? '∞' : (isFinite(v) ? v.toFixed(2) + 'x' : '—'); }
+  function fmtPct(v) { return isFinite(v) ? (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%' : '—'; }
+  function fmtMD(d) { return (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
+  function fmtYM(d) { return d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月'; }
+  function fmtUtcMD(ms) { var d = new Date(ms); return (d.getUTCMonth() + 1) + '月' + d.getUTCDate() + '日'; }
+  function fmtTime(ms) { var d = new Date(ms); return fmtMD(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function fmtDate(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function daysBetween(a, b) { return Math.round((b - a) / 86400000); }
+
+  function filingUrl(f) {
+    if (f.url) return f.url;
+    var folder = SEC_DOC_BASE + String(f.acc).replace(/-/g, '') + '/';
+    return folder + (f.doc || (f.acc + '-index.htm'));
+  }
+  // 后台条目自带 rules；浏览器直接读 SEC 时按事项编号匹配
+  function getRules(f) { return Array.isArray(f.rules) ? f.rules : matchRules(f); }
+  function matchRules(f) {
+    var out = [];
+    if (/^8-K/.test(f.form)) {
+      String(f.items || '').split(',').forEach(function (it) {
+        it = it.trim();
+        if (ITEM_RULES[it]) out.push(Object.assign({ code: 'Item ' + it }, ITEM_RULES[it]));
+      });
+    }
+    if (FORM_RULES[f.form]) out.push(Object.assign({ code: f.form }, FORM_RULES[f.form]));
+    return out;
+  }
+
+  function h(tag, props) {
+    var e = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(function (k) {
+        var v = props[k];
+        if (v == null) return;
+        if (k === 'class') e.className = v;
+        else if (k === 'text') e.textContent = v;
+        else if (k === 'style') e.setAttribute('style', v);
+        else e[k] = v;
+      });
+    }
+    for (var i = 2; i < arguments.length; i++) appendKid(e, arguments[i]);
+    return e;
+  }
+  function appendKid(e, kid) {
+    if (kid == null || kid === false) return;
+    if (Array.isArray(kid)) { kid.forEach(function (k) { appendKid(e, k); }); return; }
+    e.appendChild(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  }
+  function chip(tier, label) { return h('span', { class: 'chip ' + tier, text: label || TIER_LABEL[tier] }); }
+  function link(url, text) { return h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: text }); }
+  function $(id) { return document.getElementById(id); }
+  function setText(id, t) { var e = $(id); if (e) e.textContent = t; }
+  function setChip(id, tier, label) { var e = $(id); e.className = 'chip ' + tier; e.textContent = label || TIER_LABEL[tier]; }
+  function replaceKids(id, kids) {
+    var e = $(id);
+    while (e.firstChild) e.removeChild(e.firstChild);
+    appendKid(e, kids);
+  }
+
+  // ---------- 存储 ----------
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var s = JSON.parse(raw);
+        var merged = Object.assign(clone(DEFAULTS), s);
+        merged.events = Object.assign({}, s.events || {});
+        merged.autoNotes = Object.assign({}, s.autoNotes || {});
+        merged.secReviews = Object.assign({}, s.secReviews || {});
+        if (!Array.isArray(merged.converts)) merged.converts = clone(DEFAULTS.converts);
+        if (!Array.isArray(merged.prefs)) merged.prefs = clone(DEFAULTS.prefs);
+        return merged;
+      }
+    } catch (e) { /* 读取失败时用默认数据 */ }
+    return clone(DEFAULTS);
+  }
+  function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* 忽略 */ } }
+  function loadMarket() { try { return JSON.parse(localStorage.getItem(MARKET_KEY)) || {}; } catch (e) { return {}; } }
+  function saveMarket() { try { localStorage.setItem(MARKET_KEY, JSON.stringify(market)); } catch (e) { /* 忽略 */ } }
+
+  var state = loadState();
+  var market = loadMarket();
+  var refreshing = false;
+  var backend = null;        // 后台生成的 data/latest.json（放在 GitHub Pages 上时才有）
+  var backendMode = false;
+
+  // ---------- 行情 ----------
+  function fetchJSON(url, ms) {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms || 10000);
+    return fetch(url, { signal: ctrl ? ctrl.signal : undefined, cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .finally(function () { clearTimeout(timer); });
+  }
+
+  function getBtcSpot() {
+    return fetchJSON('https://api.coinbase.com/v2/prices/BTC-USD/spot').then(function (j) {
+      var v = Number(j && j.data && j.data.amount);
+      if (!(v > 0)) throw new Error('bad');
+      return { price: v, src: 'Coinbase' };
+    }).catch(function () {
+      return fetchJSON('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd').then(function (j) {
+        var v = Number(j && j.bitcoin && j.bitcoin.usd);
+        if (!(v > 0)) throw new Error('bad');
+        return { price: v, src: 'CoinGecko' };
+      });
+    }).catch(function () { return null; });
+  }
+
+  // 周线收盘 = UTC 周日那根日线的收盘价，只取已经走完的
+  function getBtcWeekly() {
+    var nowS = Date.now() / 1000;
+    return fetchJSON('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400').then(function (rows) {
+      if (!Array.isArray(rows) || !rows.length) throw new Error('bad');
+      rows = rows.slice().sort(function (a, b) { return b[0] - a[0]; });
+      var sundays = rows.filter(function (r) { return new Date(r[0] * 1000).getUTCDay() === 0 && r[0] + 86400 <= nowS; });
+      if (sundays.length < 2) throw new Error('bad');
+      return {
+        closes: sundays.slice(0, 2).map(function (r) { return { t: r[0] * 1000, close: Number(r[4]) }; }),
+        latest: Number(rows[0][4]),
+        src: 'Coinbase'
+      };
+    }).catch(function () {
+      return fetchJSON('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=21&interval=daily').then(function (j) {
+        var pts = (j && j.prices) || [];
+        // CoinGecko 的日线点在 UTC 0 点，周一 0 点的价格约等于周日收盘
+        var mondays = pts.filter(function (p) {
+          var d = new Date(p[0]);
+          return d.getUTCDay() === 1 && d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && p[0] <= Date.now();
+        }).sort(function (a, b) { return b[0] - a[0]; });
+        if (mondays.length < 2) throw new Error('bad');
+        return {
+          closes: mondays.slice(0, 2).map(function (p) { return { t: p[0] - 86400000, close: Number(p[1]) }; }),
+          latest: pts.length ? Number(pts[pts.length - 1][1]) : NaN,
+          src: 'CoinGecko'
+        };
+      });
+    }).catch(function () { return null; });
+  }
+
+  function getUsdt() {
+    var since = Date.now() - 48 * 3600 * 1000;
+    return fetchJSON('https://api.exchange.coinbase.com/products/USDT-USD/candles?granularity=3600').then(function (rows) {
+      if (!Array.isArray(rows) || !rows.length) throw new Error('bad');
+      rows = rows.slice().sort(function (a, b) { return b[0] - a[0]; });
+      var recent = rows.filter(function (r) { return r[0] * 1000 >= since; });
+      if (recent.length < 40) throw new Error('not enough');
+      return {
+        price: Number(rows[0][4]),
+        max48: Math.max.apply(null, recent.map(function (r) { return Number(r[4]); })),
+        min48: Math.min.apply(null, recent.map(function (r) { return Number(r[1]); })),
+        src: 'Coinbase'
+      };
+    }).catch(function () {
+      return fetchJSON('https://api.coingecko.com/api/v3/coins/tether/market_chart?vs_currency=usd&days=2').then(function (j) {
+        var pts = ((j && j.prices) || []).filter(function (p) { return p[0] >= since; });
+        if (pts.length < 40) throw new Error('not enough');
+        var v = pts.map(function (p) { return Number(p[1]); });
+        return { price: v[v.length - 1], max48: Math.max.apply(null, v), min48: Math.min.apply(null, v), src: 'CoinGecko' };
+      });
+    }).catch(function () { return null; });
+  }
+
+  // SEC 文件列表（data.sec.gov 允许网页跨站读取；8-K 正文所在的 www.sec.gov 不允许）
+  function getSec() {
+    return fetchJSON(SEC_URL, 15000).then(function (j) {
+      var r = j && j.filings && j.filings.recent;
+      if (!r || !Array.isArray(r.form)) throw new Error('bad');
+      var list = [];
+      for (var i = 0; i < r.form.length; i++) {
+        list.push({
+          acc: r.accessionNumber[i], date: r.filingDate[i], form: r.form[i],
+          items: (r.items && r.items[i]) || '', doc: (r.primaryDocument && r.primaryDocument[i]) || ''
+        });
+      }
+      return list;
+    }).catch(function () { return null; });
+  }
+
+  function loadBackend() {
+    if (location.protocol === 'file:') return Promise.resolve(null);
+    return fetchJSON('data/latest.json?t=' + Date.now(), 15000)
+      .then(function (j) { return j && j.version ? j : null; })
+      .catch(function () { return null; });
+  }
+
+  // 有新版本的后台数据时，把 8-K 里的数字填进表单（你手动改过的会被新数据覆盖）
+  function applyBackend(j) {
+    if (state.backendVersion === j.version) return;
+    var w = j.weekly || {};
+    if (w.asOf) state.asOf = w.asOf;
+    if (j.btcHoldings > 0) { state.btcHoldings = j.btcHoldings; state.btcHoldingsCommitted = j.btcHoldings; }
+    if (w.usdReserve != null) state.usdReserve = w.usdReserve;
+    if (w.usdCash != null) state.usdCash = w.usdCash;
+    if (w.buybackRemaining != null) state.buybackRemaining = w.buybackRemaining;
+    if (j.strc && j.strc.price > 0) state.strcPrice = j.strc.price;
+    state.prefs.forEach(function (p) {
+      var b = j.prefs && j.prefs[p.key];
+      if (b && b.notional > 0) p.notional = b.notional;
+      if (p.key === 'STRC' && j.strc && j.strc.rate > 0) { p.rate = j.strc.rate; state.strcRateCommitted = j.strc.rate; }
+    });
+    var ds = j.dividends && j.dividends.STRC && j.dividends.STRC.status;
+    if (ds) state.dividendStatus = ds === 'late' ? 'late' : 'ok';
+    state.buybackLowSince = '';
+    state.buybackAutoTicked = '';
+    state.holdingsDrop = null;
+    state.backendVersion = j.version;
+    saveState();
+    fillForm();
+    buildCapital();
+  }
+
+  function refreshSec() {
+    return loadBackend().then(function (j) {
+      if (j) {
+        backend = j;
+        if (!backendMode) { backendMode = true; buildEvents(); }
+        applyBackend(j);
+        market.sec = { ts: Date.parse(j.generatedAt) || Date.now(), recent: j.recentFilings || [], latest8K: j.latest8K, flagged: j.items || [], fromBackend: true };
+        market.secError = false;
+        saveMarket();
+        render();
+        return null;
+      }
+      return refreshSecDirect();
+    });
+  }
+
+  function refreshSecDirect() {
+    return getSec().then(function (list) {
+      if (list) {
+        var latest8K = null, flagged = [];
+        list.forEach(function (f) {
+          if (!latest8K && /^8-K/.test(f.form)) latest8K = f;
+          if (f.date > SEC_BASELINE && matchRules(f).length) flagged.push(f);
+        });
+        market.sec = { ts: Date.now(), recent: list.slice(0, 10), latest8K: latest8K, flagged: flagged.slice(0, 50) };
+        market.secError = false;
+      } else {
+        market.secError = true;
+      }
+      saveMarket();
+      render();
+    });
+  }
+
+  function refreshMarket() {
+    if (refreshing) return Promise.resolve();
+    refreshing = true;
+    var btn = $('btnRefresh');
+    btn.disabled = true; btn.textContent = '刷新中…';
+    return Promise.all([getBtcSpot(), getBtcWeekly(), getUsdt()]).then(function (res) {
+      var ts = Date.now();
+      if (res[0]) { res[0].ts = ts; market.btc = res[0]; }
+      if (res[1]) { res[1].ts = ts; market.weekly = res[1]; }
+      if (res[2]) { res[2].ts = ts; market.usdt = res[2]; }
+      market.lastAttempt = ts;
+      market.errors = [];
+      if (!res[0]) market.errors.push('BTC 现价');
+      if (!res[1]) market.errors.push('BTC 周线');
+      if (!res[2]) market.errors.push('USDT');
+      saveMarket();
+    }).finally(function () {
+      refreshing = false;
+      btn.disabled = false; btn.textContent = '刷新';
+      render();
+    });
+  }
+
+  // ---------- 计算 ----------
+  function covTier(r) {
+    if (r === Infinity) return 'green';
+    if (!isFinite(r)) return 'gray';
+    return r < 1.5 ? 'red' : r < 2 ? 'orange' : r < 3 ? 'yellow' : 'green';
+  }
+
+  function compute() {
+    var s = state;
+    var today = startOfDay(new Date());
+    var holdings = num(s.btcHoldings);
+    var convertsTotal = sum(s.converts.map(function (x) { return num(x.principal); }));
+    var newSenior = num(s.newSenior);
+    var debt = convertsTotal + newSenior;
+    function pref(k) { return s.prefs.filter(function (p) { return p.key === k; })[0] || { notional: 0, rate: 0 }; }
+    var strf = num(pref('STRF').notional);
+    var strc = num(pref('STRC').notional);
+    var strcRate = num(pref('STRC').rate);
+    var usd = num(s.usdReserve) + num(s.usdCash);
+    var interest = sum(s.converts.map(function (x) { return num(x.principal) * num(x.coupon) / 100; }));
+    var divs = sum(s.prefs.map(function (p) { return num(p.notional) * num(p.rate) / 100; }));
+    var annual = interest + divs;
+    var months = annual > 0 ? usd / annual * 12 : Infinity;
+    var claimsGross = debt + strf + strc;
+    var claimsNet = claimsGross - usd;
+    var seniorTotal = debt + strf;
+    var seniorDelta = seniorTotal - SENIOR_BASELINE;
+    var prefTotal = sum(s.prefs.map(function (p) { return num(p.notional); }));
+
+    function perBtc(v) { return holdings > 0 ? v * 1e8 / holdings : NaN; }
+    function covAt(P) {
+      if (!(holdings > 0) || !(P > 0)) return NaN;
+      if (claimsNet <= 0) return Infinity;
+      return holdings * P / (claimsNet * 1e8);
+    }
+    function pxAt(k) { return claimsNet > 0 ? perBtc(k * claimsNet) : NaN; }
+
+    var mk = market;
+    var livePrice, confPrice, basis, src = '', weekly = null;
+    if (s.manualBtc) {
+      livePrice = confPrice = num(s.btcManualPrice);
+      basis = 'manual';
+      src = '手动价格';
+    } else {
+      var spot = mk.btc && mk.btc.price > 0 ? mk.btc.price : (mk.weekly && mk.weekly.latest > 0 ? mk.weekly.latest : NaN);
+      if (mk.weekly && Array.isArray(mk.weekly.closes) && mk.weekly.closes.length >= 2) {
+        weekly = mk.weekly.closes.slice(0, 2);
+        confPrice = Math.max(weekly[0].close, weekly[1].close);
+        livePrice = isFinite(spot) ? spot : weekly[0].close;
+        basis = 'weekly';
+      } else if (isFinite(spot)) {
+        livePrice = confPrice = spot;
+        basis = 'spot';
+      } else {
+        livePrice = confPrice = num(s.btcManualPrice);
+        basis = 'fallback';
+      }
+      src = mk.btc ? mk.btc.src : (mk.weekly ? mk.weekly.src : '');
+    }
+    var basisText = {
+      manual: '手动价格',
+      weekly: '最近两个周线收盘中较高的一个',
+      spot: '当前价格（未经周线确认）',
+      fallback: '默认价格（行情未获取）'
+    }[basis];
+
+    var covLive = covAt(livePrice);
+    var covConf = covAt(confPrice);
+    var covTierConf = covTier(covConf);
+    var covTierLive = covTier(covLive);
+    var resTier = months < 12 ? 'orange' : months < 24 ? 'yellow' : 'green';
+    var divTier = s.dividendStatus === 'ok' ? 'green' : 'red';
+    var seniorTier = seniorDelta > 20 ? 'orange' : 'green';
+    var usdtFresh = !!(mk.usdt && Date.now() - mk.usdt.ts < 6 * 3600 * 1000);
+    var usdtTier = !mk.usdt ? 'gray' : (usdtFresh && mk.usdt.max48 < 0.98 ? 'orange' : 'green');
+
+    var signals = [], hints = [];
+    if (resTier !== 'green') {
+      signals.push({ tier: resTier, text: '美元资产只够付约 ' + months.toFixed(1) + ' 个月的股息和利息（' + (resTier === 'orange' ? '低于 12 个月' : '低于 24 个月') + '）' });
+    }
+    if (covTierConf === 'gray') {
+      hints.push('无法计算 BTC 覆盖倍数，请检查 BTC 持仓和价格。');
+    } else if (covTierConf !== 'green') {
+      var line = covTierConf === 'red' ? '1.5x' : covTierConf === 'orange' ? '2x' : '3x';
+      signals.push({ tier: covTierConf, text: 'BTC 覆盖倍数 ' + fmtX(covConf) + '，低于 ' + line + '（按' + basisText + ' ' + fmtUSD(confPrice) + ' 计算）' });
+    }
+    if (basis === 'weekly' && covTierLive !== 'gray' && TIER_ORDER[covTierLive] > TIER_ORDER[covTierConf]) {
+      hints.push('BTC 现价 ' + fmtUSD(livePrice) + ' 对应覆盖倍数 ' + fmtX(covLive) + '，已进入' + TIER_LABEL[covTierLive] + '区，但还没有连续两周周线确认。');
+    }
+    if (basis === 'spot') hints.push('没有拿到周线数据，暂按当前价格判断，未经周线确认。');
+    if (basis === 'fallback') hints.push('行情获取失败，暂用默认 BTC 价格。可以勾选“使用手动 BTC 价格”并填入最新价格。');
+    if (divTier === 'red') signals.push({ tier: 'red', text: 'STRC 分红异常：' + DIV_LABEL[s.dividendStatus] });
+    if (seniorTier === 'orange') signals.push({ tier: 'orange', text: '排在 STRC 前面的债权比 2026 年 11 月净增 ' + seniorDelta.toFixed(1) + ' 亿美元，超过 20 亿' });
+    if (usdtTier === 'orange') {
+      signals.push({ tier: 'orange', text: 'USDT 连续 48 小时低于 0.98（48 小时最高 ' + mk.usdt.max48.toFixed(4) + '）' });
+    } else if (usdtFresh && mk.usdt.price < 0.98) {
+      hints.push('USDT 现价 ' + mk.usdt.price.toFixed(4) + '，低于 0.98，但还没有持续两天。');
+    }
+    EVENTS.forEach(function (ev) {
+      if (!s.events[ev.id]) return;
+      var n = s.autoNotes[ev.id];
+      var tag = !n ? '手动勾选' : (n.text.indexOf('已确认') === 0 ? '你已确认' : '自动勾选');
+      signals.push({ tier: ev.tier, text: ev.text, tag: tag, url: n && n.url });
+    });
+
+    if (s.buybackLowSince && num(s.buybackRemaining) < 0.5 && !s.events.y_buyback) {
+      var lowSince = parseLocalDate(s.buybackLowSince);
+      var lowDays = lowSince ? daysBetween(lowSince, today) : 0;
+      hints.push('优先股回购额度从 ' + s.buybackLowSince + ' 起低于 0.5 亿美元，已经 ' + lowDays + ' 天。满 30 天且 STRC 低于 95 美元时会自动勾选黄色第 1 条。');
+    }
+    if (s.holdingsDrop) {
+      hints.push('你填的 BTC 持仓比上次少了 ' + Math.round(s.holdingsDrop.from - s.holdingsDrop.to).toLocaleString('en-US') +
+        ' 枚。8-K 里披露了卖币就正常；没有披露的话，按红色“BTC 托管出事”处理。');
+    }
+    var sec = market.sec;
+    // 没有对应事件的条目（比如 STRF 没按时宣告分红），自动触发或你确认后直接算一个信号
+    ((sec && sec.flagged) || []).forEach(function (f) {
+      var st = s.secReviews[f.acc];
+      if (st !== 'auto' && st !== 'confirmed') return;
+      getRules(f).forEach(function (r) {
+        if (r.ev || r.tier === 'info' || !TIER_ORDER.hasOwnProperty(r.tier)) return;
+        if (st === 'auto' && !r.auto) return;
+        signals.push({ tier: r.tier, text: r.text, tag: st === 'auto' ? '自动' : '你已确认', url: filingUrl(f) });
+      });
+    });
+    if (backend) {
+      (backend.warnings || []).forEach(function (wtxt) { hints.push('后台提示：' + wtxt); });
+      var bd = backend.dividends && backend.dividends.STRC;
+      if (bd && bd.status === 'due') hints.push('STRC 的分红只宣告到 ' + bd.declaredThrough + '，还没看到下个月的宣告。过了期限还没有就是红色信号。');
+      var chk = parseLocalDate(backend.checkedDate);
+      if (chk && daysBetween(chk, today) > 2) hints.push('后台已经 ' + daysBetween(chk, today) + ' 天没有更新，请到 GitHub 仓库的 Actions 页面看看定时任务是否在运行。');
+    }
+    if (market.secError && !sec) {
+      hints.push('SEC 文件检查失败，事件信号的自动检测暂时不可用，请手动看 8-K。');
+    } else if (market.secError && Date.now() - sec.ts > 24 * 3600 * 1000) {
+      hints.push('SEC 文件已经超过一天没检查成功，事件信号的自动检测暂时不可用，请手动看 8-K。');
+    }
+    if (sec) {
+      var pendingCount = (sec.flagged || []).filter(function (f) { return !s.secReviews[f.acc]; }).length;
+      if (pendingCount) hints.push('有 ' + pendingCount + ' 条自动检测结果需要你确认，见下方“' + (sec.fromBackend ? '自动检测（后台）' : 'SEC 文件监控') + '”。');
+      var asOfD = parseLocalDate(s.asOf), l8 = sec.latest8K ? parseLocalDate(sec.latest8K.date) : null;
+      if (asOfD && l8 && daysBetween(asOfD, l8) > 1) {
+        hints.push({ text: 'Strategy 在 ' + fmtMD(l8) + '发了新的 8-K，你的数据截至 ' + fmtMD(asOfD) + '，记得更新。', url: filingUrl(sec.latest8K), label: '打开这份 8-K' });
+      }
+    }
+    var firstPut = s.converts.filter(function (x) { return x.put === '2027-09-15'; })[0];
+    if (today >= new Date(2027, 5, 30) && firstPut && num(firstPut.principal) > 0 && !s.events.y_putplan) {
+      hints.push('已到 2027 年年中：请确认 2027-09-15 那笔回售的偿还方案有没有公布。');
+    }
+    if (s.manualBtc) hints.push('正在使用手动 BTC 价格 ' + fmtUSD(livePrice) + '，所有判断都按这个价格。');
+
+    var yellowCount = signals.filter(function (x) { return x.tier === 'yellow'; }).length;
+    var overall = 'green';
+    signals.forEach(function (x) { if (TIER_ORDER[x.tier] > TIER_ORDER[overall]) overall = x.tier; });
+    var escalated = false;
+    if (overall === 'yellow' && yellowCount >= 2) { overall = 'orange'; escalated = true; }
+
+    return {
+      today: today, holdings: holdings, convertsTotal: convertsTotal, newSenior: newSenior, debt: debt,
+      strf: strf, strc: strc, strcRate: strcRate, usd: usd, annual: annual, months: months,
+      claimsGross: claimsGross, claimsNet: claimsNet, seniorTotal: seniorTotal, seniorDelta: seniorDelta,
+      prefTotal: prefTotal, perBtc: perBtc, pxAt: pxAt, livePrice: livePrice, confPrice: confPrice,
+      basis: basis, basisText: basisText, src: src, weekly: weekly, covLive: covLive, covConf: covConf,
+      covTierConf: covTierConf, resTier: resTier, divTier: divTier, seniorTier: seniorTier,
+      usdtFresh: usdtFresh, usdtTier: usdtTier, signals: signals, hints: hints, overall: overall, escalated: escalated
+    };
+  }
+
+  // ---------- 渲染 ----------
+  function marketLineText() {
+    if (state.manualBtc) return '正在使用手动 BTC 价格。';
+    if (refreshing && !market.lastAttempt) return '正在获取行情…';
+    if (!market.lastAttempt) return '还没有获取行情。';
+    var parts = [];
+    if (market.btc) parts.push('BTC 行情来自 ' + market.btc.src + '，' + fmtTime(market.btc.ts) + ' 更新。');
+    if (market.errors && market.errors.length) {
+      parts.push('本次获取失败：' + market.errors.join('、') + (market.btc || market.weekly ? '，显示的是上次成功的数据。' : '。'));
+    }
+    return parts.join(' ');
+  }
+
+  function renderStatus(c) {
+    $('statusCard').className = 'card status ' + c.overall;
+    var badge = $('statusBadge');
+    badge.className = 'badge ' + c.overall;
+    badge.textContent = TIER_LABEL[c.overall];
+    var title = c.overall === 'green' ? '所有指标都在安全区' : '当前级别：' + TIER_LABEL[c.overall];
+    if (c.basis === 'fallback') title += '（行情未获取，按默认 BTC 价格判断）';
+    setText('statusTitle', title);
+    setText('statusAction', '建议动作：' + TIER_ACTION[c.overall]);
+    setText('marketLine', marketLineText());
+    var reasons = c.signals.map(function (x) {
+      return h('li', null, chip(x.tier), ' ', x.text,
+        x.tag ? h('span', { class: 'small muted', text: '（' + x.tag + '）' }) : null,
+        x.url ? [' ', link(x.url, '打开文件')] : null);
+    });
+    if (c.escalated) reasons.push(h('li', null, chip('orange'), ' 两个黄色信号同时出现，按橙色处理'));
+    replaceKids('statusReasons', reasons);
+    replaceKids('statusHints', c.hints.map(function (t) {
+      if (typeof t === 'string') return h('li', { text: t });
+      return h('li', null, t.text, t.url ? [' ', link(t.url, t.label || '打开')] : null);
+    }));
+  }
+
+  function renderCards(c) {
+    // BTC
+    setText('btcPrice', fmtUSD(c.livePrice));
+    var srcText;
+    if (c.basis === 'manual') srcText = '手动价格';
+    else if (c.basis === 'fallback') srcText = '行情未获取，暂用默认价格';
+    else srcText = '来源：' + c.src + (market.btc ? '，' + fmtTime(market.btc.ts) : '');
+    setText('btcSrc', srcText);
+    if (c.weekly) {
+      setText('btcWeekly', '最近两个周线收盘：' + fmtUtcMD(c.weekly[0].t) + ' ' + fmtUSD(c.weekly[0].close) + ' · ' + fmtUtcMD(c.weekly[1].t) + ' ' + fmtUSD(c.weekly[1].close));
+    } else {
+      setText('btcWeekly', c.basis === 'manual' ? '' : '周线数据未获取');
+    }
+
+    // 覆盖倍数
+    setChip('covChip', c.covTierConf);
+    setText('covValue', fmtX(c.covLive));
+    setText('covBasis', c.basis === 'weekly' ? '按现价计算；周线确认值 ' + fmtX(c.covConf) : '按' + c.basisText + '计算');
+    var pos = c.covLive === Infinity ? 100 : (isFinite(c.covLive) ? Math.min(c.covLive, 6) / 6 * 100 : 0);
+    $('covMarker').style.left = pos + '%';
+    var ladder = [
+      ['黄线 3x', c.pxAt(3), false],
+      ['橙线 2x', c.pxAt(2), false],
+      ['红线 1.5x', c.pxAt(1.5), false],
+      ['参考：现金花光后的本金覆盖线', c.perBtc(c.claimsGross), true],
+      ['参考：MSTR 普通股账面归零', c.perBtc(c.debt + c.prefTotal - c.usd), true],
+      ['参考：本金覆盖线 1.0x', c.pxAt(1), true]
+    ];
+    replaceKids('covLadder', ladder.map(function (r) {
+      var txt = isFinite(r[1]) ? fmtUSD(r[1]) + '（' + fmtPct(r[1] / c.livePrice - 1) + '）' : '—';
+      return h('tr', { class: r[2] ? 'ref' : '' }, h('td', { text: r[0] }), h('td', { class: 'num', text: txt }));
+    }));
+    setText('covShift', '括号里是相对现价的距离。美元储备每花掉一年，黄 / 橙 / 红线约上移 ' +
+      fmtUSD(c.perBtc(3 * c.annual)) + ' / ' + fmtUSD(c.perBtc(2 * c.annual)) + ' / ' + fmtUSD(c.perBtc(1.5 * c.annual)) + '。');
+
+    // 美元资产
+    setChip('resChip', c.resTier);
+    setText('resValue', isFinite(c.months) ? c.months.toFixed(1) + ' 个月' : '∞');
+    setText('resBasis', '美元资产 ' + fmtYi(c.usd) + ' ÷ 每年股息和利息 ' + fmtYi(c.annual) + (isFinite(c.months) ? '（约 ' + (c.months / 12).toFixed(2) + ' 年）' : ''));
+    $('resMarker').style.left = (isFinite(c.months) ? Math.min(c.months, 48) / 48 * 100 : 100) + '%';
+    var asOf = parseLocalDate(state.asOf) || c.today;
+    var proj = '';
+    if (isFinite(c.months) && c.months > 24) {
+      proj = '如果一直不补充：约 ' + fmtYM(addMonths(asOf, c.months - 24)) + '降到 24 个月（黄线），约 ' + fmtYM(addMonths(asOf, c.months - 12)) + '降到 12 个月（橙线）。';
+    } else if (isFinite(c.months) && c.months > 12) {
+      proj = '如果一直不补充：约 ' + fmtYM(addMonths(asOf, c.months - 12)) + '降到 12 个月（橙线）。';
+    }
+    setText('resProj', proj + '董事会政策要求至少保留 12 个月。');
+
+    // STRC
+    setChip('divChip', c.divTier, c.divTier === 'green' ? '正常' : '红色');
+    setText('strcRateBig', c.strcRate.toFixed(2) + '%');
+    var price = num(state.strcPrice);
+    var nd = nextDeclaration(c.today);
+    replaceKids('strcInfo', [
+      h('div', { text: '价格 $' + price.toFixed(2) + (price > 0 ? ' · 实际收益率 ' + (c.strcRate / price * 100).toFixed(2) + '%' : '') }),
+      h('div', { text: '最新分红宣告：' + DIV_LABEL[state.dividendStatus] }),
+      h('div', { text: '下一次宣告：约 ' + (nd.getMonth() + 1) + '月14–15日' }),
+      h('div', { text: 'STRC 面值 ' + fmtYi(c.strc) + ' · 每年股息 ' + fmtYi(c.strc * c.strcRate / 100) }),
+      h('div', { text: '优先股回购剩余额度：' + fmtYi(num(state.buybackRemaining)) })
+    ]);
+
+    // USDT
+    var u = market.usdt;
+    if (u) {
+      setText('usdtPrice', u.price.toFixed(4));
+      setText('usdtInfo', '48 小时最高 ' + u.max48.toFixed(4) + ' · 最低 ' + u.min48.toFixed(4) + ' · ' + u.src + '，' + fmtTime(u.ts) + (c.usdtFresh ? '' : '（数据已过期，不参与判断）'));
+      if (c.usdtTier === 'orange') setChip('usdtChip', 'orange');
+      else if (c.usdtFresh && u.price < 0.98) setChip('usdtChip', 'gray', '关注');
+      else setChip('usdtChip', 'green', '正常');
+    } else {
+      setText('usdtPrice', '—');
+      setText('usdtInfo', '未获取');
+      setChip('usdtChip', 'gray', '未知');
+    }
+  }
+
+  function renderQuant(c) {
+    var u = market.usdt;
+    var rows = [
+      ['美元资产能付几个月', isFinite(c.months) ? c.months.toFixed(1) + ' 个月' : '∞', '低于 24 个月', '低于 12 个月', '—', c.resTier],
+      ['BTC 覆盖倍数',
+        c.basis === 'weekly' ? fmtX(c.covLive) + '（现价）· ' + fmtX(c.covConf) + '（周线）' : fmtX(c.covConf),
+        '低于 3x（BTC ' + fmtUSD(c.pxAt(3)) + '）', '低于 2x（' + fmtUSD(c.pxAt(2)) + '）', '低于 1.5x（' + fmtUSD(c.pxAt(1.5)) + '）', c.covTierConf],
+      ['STRC 分红', c.strcRate.toFixed(2) + '%，' + DIV_LABEL[state.dividendStatus], '—', '低于 100 时降息或提议改条款（在事件信号里勾选）', '没按时宣告、只付一部分或出现欠息', c.divTier],
+      ['排在 STRC 前面的债权', fmtYi(c.seniorTotal) + (Math.abs(c.seniorDelta) < 0.05 ? '（与基准持平）' : '（比基准 ' + (c.seniorDelta > 0 ? '+' : '−') + Math.abs(c.seniorDelta).toFixed(1) + '）'), '—', '比 2026 年 11 月净增 20 亿以上', '—', c.seniorTier],
+      ['USDT', u ? u.price.toFixed(4) + '（48 小时最高 ' + u.max48.toFixed(4) + '）' : '未获取', '—', '连续 48 小时低于 0.98', '—', c.usdtTier]
+    ];
+    replaceKids('quantBody', rows.map(function (r) {
+      return h('tr', null,
+        h('td', { text: r[0] }), h('td', { class: 'num', text: r[1] }),
+        h('td', { text: r[2] }), h('td', { text: r[3] }), h('td', { text: r[4] }),
+        h('td', null, chip(r[5])));
+    }));
+  }
+
+  function renderEventsState() {
+    EVENTS.forEach(function (ev) {
+      var cb = document.querySelector('input[data-ev="' + ev.id + '"]');
+      if (!cb) return;
+      cb.checked = !!state.events[ev.id];
+      var lab = cb.closest('label');
+      if (lab) lab.classList.toggle('on', cb.checked);
+      var n = state.events[ev.id] ? state.autoNotes[ev.id] : null;
+      replaceKids('evnote_' + ev.id, n ? [n.text, n.url ? [' · ', link(n.url, '打开文件')] : null] : null);
+    });
+  }
+
+  function secButton(acc, action, text) {
+    var b = h('button', { type: 'button', text: text });
+    b.dataset.secAcc = acc;
+    b.dataset.secAction = action;
+    return b;
+  }
+
+  function filingCard(f, status) {
+    var rules = getRules(f);
+    var top = rules.reduce(function (t, r) { return RULE_ORDER[r.tier] > RULE_ORDER[t] ? r.tier : t; }, 'info');
+    var cls = top === 'info' ? 'gray' : top;
+    var label;
+    if (status === 'auto') label = '已自动按' + TIER_LABEL[top] + '处理';
+    else if (status === 'confirmed') label = '你已确认';
+    else if (status === 'dismissed') label = '看过了，没影响';
+    else label = top === 'info' ? '提示' : '待确认，确认后按' + TIER_LABEL[top] + '处理';
+    var actions = [link(filingUrl(f), '打开文件')];
+    if (!status) {
+      var labels = rules.filter(function (r) { return !r.auto && r.ev; }).map(function (r) { return r.confirm || '确认触发'; });
+      var uniq = labels.filter(function (x, i) { return labels.indexOf(x) === i; });
+      if (uniq.length) actions.push(secButton(f.acc, 'confirm', uniq.length === 1 ? uniq[0] : '确认触发'));
+      actions.push(secButton(f.acc, 'dismiss', '看过了，没影响'));
+    } else if (status === 'dismissed') {
+      actions.push(secButton(f.acc, 'reopen', '改回待确认'));
+    } else {
+      actions.push(secButton(f.acc, 'dismiss', '撤销：看过了，没影响'));
+    }
+    var head = f.date + ' · ' + f.form + (f.items ? ' · Item ' + f.items.split(',').join('、') : '');
+    return h('div', { class: 'filing ' + cls },
+      h('div', null, chip(cls, label), ' ', h('span', { class: 'num', text: head })),
+      h('ul', null, rules.map(function (r) { return h('li', { text: r.code + '：' + r.text }); })),
+      h('div', { class: 'row' }, actions));
+  }
+
+  var LOCAL_NOTE = '页面每 30 分钟从 SEC 读一次 Strategy 的文件列表。出现 8-K Item 1.03（破产）、2.04（债务加速到期）、4.02（财报重述）会直接按红色处理；Item 4.01、1.05、2.03、3.03、5.03 和股东大会代理声明会列在这里等你确认。浏览器读不到 8-K 正文，所以周报里的数字仍要手动填。';
+  var BACKEND_NOTE = '后台每 30 分钟运行一次：读 SEC 文件列表和 8-K 正文（周报数字、回购额度、分红宣告、利率公告、ATM 增发、美元储备用途），再抓 STRC 收盘价。能确定的信号直接勾选，其余列在这里等你确认。出现新信号时，GitHub 会开一个 Issue 通知你。';
+
+  function renderSec() {
+    var sec = market.sec;
+    var fromBackend = !!(sec && sec.fromBackend);
+    setText('secTitle', fromBackend ? '自动检测（后台）' : 'SEC 文件监控（自动）');
+    setText('secNote', fromBackend ? BACKEND_NOTE : LOCAL_NOTE);
+    var status = [];
+    if (!sec) {
+      status.push(market.secError ? 'SEC 文件列表获取失败，30 分钟后会自动重试，也可以点右上角“刷新”。' : '正在检查 SEC 文件…');
+    } else {
+      status.push((fromBackend ? '后台数据更新于 ' : '上次检查：') + fmtTime(sec.ts) + (market.secError ? '（最近一次检查失败，显示的是上次结果）' : '') + '。');
+      if (fromBackend && backend && backend.weekly) status.push(' 周报数字来自 ' + backend.weekly.filingDate + ' 的 8-K（截至 ' + backend.weekly.asOf + '）。');
+      if (sec.latest8K) status.push(' 最新一份 8-K：' + sec.latest8K.date + '（Item ' + (sec.latest8K.items ? sec.latest8K.items.split(',').join('、') : '—') + '） ', link(filingUrl(sec.latest8K), '打开'));
+    }
+    replaceKids('secStatus', status);
+
+    var flagged = sec ? (sec.flagged || []) : [];
+    var pending = flagged.filter(function (f) { return !state.secReviews[f.acc]; });
+    var done = flagged.filter(function (f) { return state.secReviews[f.acc]; });
+    replaceKids('secPending', pending.length ? pending.map(function (f) { return filingCard(f, null); })
+      : (sec ? h('p', { class: 'small', text: SEC_BASELINE + ' 之后没有需要你确认的新文件。' }) : null));
+    $('secDoneBox').classList.toggle('hidden', !done.length);
+    setText('secDoneCount', String(done.length));
+    replaceKids('secDone', done.map(function (f) { return filingCard(f, state.secReviews[f.acc]); }));
+    replaceKids('secRecent', sec ? sec.recent.map(function (f) {
+      return h('tr', null, h('td', { class: 'num', text: f.date }), h('td', { text: f.form }), h('td', { text: f.items ? f.items.split(',').join('、') : '—' }), h('td', null, link(filingUrl(f), '打开')));
+    }) : null);
+  }
+
+  function secAction(acc, action) {
+    var sec = market.sec;
+    var f = sec && (sec.flagged || []).filter(function (x) { return x.acc === acc; })[0];
+    if (!f) return;
+    var rules = getRules(f), url = filingUrl(f);
+    if (action === 'confirm') {
+      rules.forEach(function (r) {
+        if (r.auto || !r.ev) return;
+        state.events[r.ev] = true;
+        state.autoNotes[r.ev] = { text: '已确认：' + f.date + ' 的 ' + f.form + '（' + r.code + '）', url: url };
+      });
+      state.secReviews[acc] = 'confirmed';
+    } else if (action === 'dismiss') {
+      rules.forEach(function (r) {
+        var n = r.ev && state.autoNotes[r.ev];
+        if (n && n.url === url) { state.events[r.ev] = false; delete state.autoNotes[r.ev]; }
+      });
+      state.secReviews[acc] = 'dismissed';
+    } else if (action === 'reopen') {
+      delete state.secReviews[acc];
+    }
+    saveState();
+    render();
+  }
+
+  // 根据 SEC 文件和你填的数字自动勾选事件。每个来源只勾一次，你取消后不会再勾回去
+  function applyAutoRules() {
+    var changed = false;
+    var sec = market.sec;
+    if (sec && sec.flagged) {
+      sec.flagged.forEach(function (f) {
+        if (state.secReviews[f.acc]) return;
+        var autoRules = getRules(f).filter(function (r) { return r.auto; });
+        if (!autoRules.length) return;
+        autoRules.forEach(function (r) {
+          if (!r.ev) return;  // 没有对应事件的，在 compute() 里直接算信号
+          state.events[r.ev] = true;
+          state.autoNotes[r.ev] = { text: '自动勾选：' + f.date + ' 的 ' + f.form + '（' + r.code + '）', url: filingUrl(f) };
+        });
+        state.secReviews[f.acc] = 'auto';
+        changed = true;
+      });
+    }
+    if (!backendMode && state.buybackLowSince && num(state.buybackRemaining) < 0.5 && state.buybackAutoTicked !== state.buybackLowSince) {
+      var since = parseLocalDate(state.buybackLowSince);
+      var days = since ? daysBetween(since, startOfDay(new Date())) : 0;
+      var px = num(state.strcPrice);
+      if (days >= 30 && px > 0 && px < 95) {
+        state.events.y_buyback = true;
+        state.autoNotes.y_buyback = { text: '自动勾选：回购额度从 ' + state.buybackLowSince + ' 起低于 0.5 亿美元，已经 ' + days + ' 天，STRC 价格 $' + px.toFixed(2) };
+        state.buybackAutoTicked = state.buybackLowSince;
+        changed = true;
+      }
+    }
+    if (changed) saveState();
+  }
+
+  function nextMonday(today) {
+    var diff = (1 - today.getDay() + 7) % 7;
+    var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff);
+    return { date: d, isToday: diff === 0 };
+  }
+  function nextDeclaration(today) {
+    var d = new Date(today.getFullYear(), today.getMonth(), 15);
+    if (today.getDate() > 15) d = new Date(today.getFullYear(), today.getMonth() + 1, 15);
+    return d;
+  }
+  function nextEarnings(today) {
+    var y = today.getFullYear(), md = (today.getMonth() + 1) * 100 + today.getDate();
+    if (md < 210) return '约 ' + y + ' 年 2 月初（第四季度）';
+    if (md < 510) return '约 ' + y + ' 年 5 月初（第一季度）';
+    if (md < 805) return '约 ' + y + ' 年 7 月底到 8 月初（第二季度）';
+    if (md < 1105) return '约 ' + y + ' 年 10 月底到 11 月初（第三季度）';
+    return '约 ' + (y + 1) + ' 年 2 月初（第四季度）';
+  }
+
+  function renderCalendar(c) {
+    var nm = nextMonday(c.today);
+    var nd = nextDeclaration(c.today);
+    replaceKids('calendarList', [
+      h('li', { text: '下一份 Strategy 8-K：' + (nm.isToday ? '今天' : fmtMD(nm.date)) + '（' + WEEK[nm.date.getDay()] + '，遇美国假日顺延）' }),
+      h('li', { text: '下一次 STRC 利率和分红宣告：约 ' + (nd.getMonth() + 1) + '月14–15日' }),
+      h('li', { text: '下一次财报：' + nextEarnings(c.today) })
+    ]);
+
+    var list = state.converts.slice().sort(function (a, b) { return String(a.put).localeCompare(String(b.put)); });
+    var total = 0;
+    var rows = list.map(function (x) {
+      var p = num(x.principal);
+      total += p;
+      var d = parseLocalDate(x.put);
+      var days = d ? Math.round((d - c.today) / 86400000) : NaN;
+      var need = c.livePrice > 0 ? p * 1e8 / c.livePrice : NaN;
+      var needTxt = p > 0 && isFinite(need) ? '约 ' + Math.round(need).toLocaleString('en-US') + ' 枚（' + (c.holdings > 0 ? (need / c.holdings * 100).toFixed(1) : '—') + '%）' : '—';
+      return h('tr', null,
+        h('td', { class: 'num', text: x.put || '—' }),
+        h('td', { text: x.name }),
+        h('td', { class: 'num', text: p > 0 ? fmtYi(p) : '已偿还' }),
+        h('td', { class: 'num', text: !isFinite(days) ? '—' : (days >= 0 ? days + ' 天' : '已过') }),
+        h('td', { class: 'num', text: needTxt }),
+        h('td', { class: 'num', text: '$' + num(x.conv).toFixed(2) }));
+    });
+    var totalNeed = c.livePrice > 0 ? total * 1e8 / c.livePrice : NaN;
+    rows.push(h('tr', { class: 'total' },
+      h('td', { text: '合计' }), h('td', { text: '' }), h('td', { class: 'num', text: fmtYi(total) }), h('td', { text: '' }),
+      h('td', { class: 'num', text: isFinite(totalNeed) && total > 0 ? '约 ' + Math.round(totalNeed).toLocaleString('en-US') + ' 枚（' + (c.holdings > 0 ? (totalNeed / c.holdings * 100).toFixed(1) : '—') + '%）' : '—' }),
+      h('td', { text: '' })));
+    replaceKids('putBody', rows);
+  }
+
+  function renderCapSummary(c) {
+    setText('capSummary',
+      '可转债合计 ' + fmtYi(c.convertsTotal) + (c.newSenior > 0 ? '，另有新增优先债权 ' + fmtYi(c.newSenior) : '') +
+      '；排在 STRC 前面合计 ' + fmtYi(c.seniorTotal) + '；STRC ' + fmtYi(c.strc) + '；全部优先股 ' + fmtYi(c.prefTotal) +
+      '；每年股息和利息约 ' + fmtYi(c.annual) + '。');
+  }
+
+  function renderAutoFill() {
+    var el = $('autoFillNote');
+    if (!backend || !backend.weekly) { el.classList.add('hidden'); return; }
+    el.textContent = '下面的 BTC 持仓、美元储备和现金、回购额度、优先股面值、STRC 利率和价格，已由后台从 ' + backend.weekly.filingDate +
+      ' 的 8-K 和 ' + ((backend.strc && backend.strc.priceDate) || '—') + ' 的收盘价自动填好，一般不用手动改。你改过的数字会在下次有新数据时被覆盖。';
+    el.classList.remove('hidden');
+    if (!renderAutoFill.collapsed) { $('manualSteps').open = false; renderAutoFill.collapsed = true; }
+  }
+
+  function renderStale(c) {
+    var el = $('staleBanner');
+    var d = parseLocalDate(state.asOf);
+    var days = d ? Math.floor((c.today - d) / 86400000) : NaN;
+    if (isFinite(days) && days > 9) {
+      el.textContent = 'Strategy 数据截至 ' + state.asOf + '，已经 ' + days + ' 天没更新。请对照最新的 8-K 更新页面下方的数据。';
+      el.classList.remove('hidden');
+    } else {
+      el.classList.add('hidden');
+    }
+  }
+
+  function render() {
+    applyAutoRules();
+    var c = compute();
+    renderStatus(c);
+    renderCards(c);
+    renderQuant(c);
+    renderSec();
+    renderEventsState();
+    renderCalendar(c);
+    renderCapSummary(c);
+    renderStale(c);
+    renderAutoFill();
+  }
+
+  // ---------- 表单 ----------
+  function fillForm() {
+    var els = document.querySelectorAll('[data-key]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], v = state[el.dataset.key];
+      if (el.type === 'checkbox') el.checked = !!v;
+      else el.value = v == null ? '' : v;
+    }
+  }
+
+  function inp(arr, idx, field, value, type, step) {
+    var e = h('input', { type: type || 'number' });
+    if (step) e.step = step;
+    e.value = value == null ? '' : value;
+    e.dataset.arr = arr;
+    e.dataset.idx = String(idx);
+    e.dataset.field = field;
+    e.setAttribute('aria-label', field);
+    return e;
+  }
+
+  function buildCapital() {
+    replaceKids('convBody', state.converts.map(function (x, i) {
+      return h('tr', null,
+        h('td', { text: x.name }),
+        h('td', null, inp('converts', i, 'principal', x.principal, 'number', '0.01')),
+        h('td', null, inp('converts', i, 'coupon', x.coupon, 'number', '0.001')),
+        h('td', null, inp('converts', i, 'put', x.put, 'date')),
+        h('td', null, inp('converts', i, 'conv', x.conv, 'number', '0.01')));
+    }));
+    var RANK = { senior: '排在前面', self: '你持有的', junior: '排在后面' };
+    var NOTE = { STRD: '（非累积）', STRE: '（欧元计价，约数）' };
+    replaceKids('prefBody', state.prefs.map(function (p, i) {
+      return h('tr', null,
+        h('td', null, h('strong', { text: p.key }), NOTE[p.key] ? h('span', { class: 'small muted', text: NOTE[p.key] }) : null),
+        h('td', null, inp('prefs', i, 'notional', p.notional, 'number', '0.01')),
+        h('td', null, inp('prefs', i, 'rate', p.rate, 'number', '0.01')),
+        h('td', { text: RANK[p.rank] || '' }));
+    }));
+  }
+
+  function buildEvents() {
+    var groups = [
+      ['yellow', '黄色：不加仓，提高检查频率'],
+      ['orange', '橙色：减到原仓位一半以下'],
+      ['red', '红色：全部卖出，不等反弹']
+    ];
+    replaceKids('eventsBox', groups.map(function (g) {
+      var items = EVENTS.filter(function (ev) { return ev.tier === g[0]; }).map(function (ev) {
+        var cb = h('input', { type: 'checkbox' });
+        cb.dataset.ev = ev.id;
+        cb.checked = !!state.events[ev.id];
+        var mode = backendMode && ev.bMode ? ev.bMode : ev.mode;
+        var modeText = backendMode && ev.bText ? ev.bText : ev.autoText;
+        return h('label', { class: 'ev ' + ev.tier }, cb,
+          h('span', null, ev.text,
+            ev.how ? h('span', { class: 'how', text: ev.how }) : null,
+            h('span', { class: 'how' }, h('span', { class: 'tag ' + mode, text: MODE_LABEL[mode] }), modeText),
+            h('span', { class: 'note', id: 'evnote_' + ev.id })));
+      });
+      return h('div', { class: 'events-group' }, h('h3', null, chip(g[0]), g[1]), items);
+    }));
+  }
+
+  function onField(e) {
+    var el = e.target;
+    if (!el || !el.dataset) return;
+    if (el.dataset.key) {
+      var key = el.dataset.key;
+      state[key] = el.type === 'checkbox' ? el.checked : el.value;
+      if (key === 'buybackRemaining') trackBuyback();
+      if (key === 'btcHoldings' && e.type === 'change') trackHoldings();
+    } else if (el.dataset.arr) {
+      var row = state[el.dataset.arr] && state[el.dataset.arr][Number(el.dataset.idx)];
+      if (!row) return;
+      row[el.dataset.field] = el.value;
+      if (e.type === 'change' && el.dataset.arr === 'prefs' && row.key === 'STRC' && el.dataset.field === 'rate') trackRate(row);
+    } else if (el.dataset.ev) {
+      state.events[el.dataset.ev] = el.checked;
+      if (!el.checked) delete state.autoNotes[el.dataset.ev];
+    } else {
+      return;
+    }
+    saveState();
+    render();
+  }
+
+  // 回购额度第一次低于 0.5 亿美元时记下日期，恢复后清掉
+  function trackBuyback() {
+    if (num(state.buybackRemaining) < 0.5) {
+      if (!state.buybackLowSince) state.buybackLowSince = fmtDate(new Date());
+    } else {
+      state.buybackLowSince = '';
+      state.buybackAutoTicked = '';
+    }
+  }
+  // 填完 BTC 持仓后和上次比较，变少了就提醒
+  function trackHoldings() {
+    var now = num(state.btcHoldings), prev = num(state.btcHoldingsCommitted);
+    state.holdingsDrop = (now > 0 && prev > 0 && now < prev) ? { from: prev, to: now, date: fmtDate(new Date()) } : null;
+    state.btcHoldingsCommitted = now;
+  }
+  // 改完 STRC 利率后和上次比较，STRC 低于 100 美元时降息就自动勾选
+  function trackRate(row) {
+    var now = num(row.rate), prev = num(state.strcRateCommitted), px = num(state.strcPrice);
+    if (now < prev && px > 0 && px < 100) {
+      state.events.o_ratecut = true;
+      state.autoNotes.o_ratecut = { text: '自动勾选：STRC 利率从 ' + prev + '% 改成 ' + now + '%，当时 STRC 价格 $' + px.toFixed(2) };
+    }
+    state.strcRateCommitted = now;
+  }
+
+  document.addEventListener('input', onField);
+  document.addEventListener('change', onField);
+
+  $('btnRefresh').addEventListener('click', function () { refreshMarket(); refreshSec(); });
+
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('button[data-sec-acc]') : null;
+    if (b) secAction(b.dataset.secAcc, b.dataset.secAction);
+  });
+
+  $('btnApplyBuyback').addEventListener('click', function () {
+    var input = $('f_buybackShares');
+    var shares = num(input.value);
+    if (!(shares > 0)) { setText('buybackMsg', '请先填入回购股数。'); return; }
+    var p = state.prefs.filter(function (x) { return x.key === 'STRC'; })[0];
+    var before = num(p.notional);
+    var delta = shares * 100 / 1e8;
+    p.notional = Math.max(0, Math.round((before - delta) * 100) / 100);
+    saveState();
+    buildCapital();
+    render();
+    input.value = '';
+    setText('buybackMsg', '已扣除 ' + delta.toFixed(2) + ' 亿美元：STRC 面值 ' + before.toFixed(2) + ' → ' + p.notional.toFixed(2) + ' 亿美元。');
+  });
+
+  $('btnReset').addEventListener('click', function () {
+    if (!window.confirm('恢复为默认数据（截至 2026-11-15）？你更新过的数据和勾选的事件都会被清除。')) return;
+    state = clone(DEFAULTS);
+    if (backend) applyBackend(backend);
+    saveState();
+    fillForm();
+    buildCapital();
+    buildEvents();
+    render();
+  });
+
+  fillForm();
+  buildCapital();
+  buildEvents();
+  render();
+  refreshMarket();
+  refreshSec();
+  setInterval(refreshMarket, REFRESH_MS);
+  setInterval(refreshSec, SEC_REFRESH_MS);
+})();
+</script>
+</body>
+</html>
