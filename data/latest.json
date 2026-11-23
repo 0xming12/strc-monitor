@@ -143,13 +143,20 @@
   }
  ],
  "latest8K": {
-  "acc": "0001193125-26-462151",
-  "date": "2026-11-16",
+  "acc": "0001193125-26-470961",
+  "date": "2026-11-23",
   "form": "8-K",
   "items": "7.01,8.01",
-  "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526462151/mstr-20261116.htm"
+  "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526470961/mstr-20261123.htm"
  },
  "recentFilings": [
+  {
+   "acc": "0001193125-26-470961",
+   "date": "2026-11-23",
+   "form": "8-K",
+   "items": "7.01,8.01",
+   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526470961/mstr-20261123.htm"
+  },
   {
    "acc": "0001193125-26-462151",
    "date": "2026-11-16",
@@ -212,19 +219,12 @@
    "form": "10-Q",
    "items": "",
    "url": "https://www.sec.gov/Archives/edgar/data/1050446/000105044626000060/mstr-20260930.htm"
-  },
-  {
-   "acc": "0001193125-26-442833",
-   "date": "2026-11-02",
-   "form": "424B5",
-   "items": "",
-   "url": "https://www.sec.gov/Archives/edgar/data/1050446/000119312526442833/d124693d424b5.htm"
   }
  ],
  "items": [],
  "secBaseline": "2026-11-16",
  "warnings": [],
- "version": "c7d493d50157",
- "checkedDate": "2026-11-22",
- "generatedAt": "2026-11-22T09:23:56Z"
+ "version": "4d3ebc0a226b",
+ "checkedDate": "2026-11-23",
+ "generatedAt": "2026-11-23T13:27:05Z"
 }

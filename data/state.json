@@ -455,6 +455,69 @@
    },
    "usdCash": 1.512,
    "usdReserve": 47.5
+  },
+  "0001193125-26-470961": {
+   "atm": {
+    "MSTR": {
+     "net": 176.7,
+     "notional": 0,
+     "shares": 1925676.0
+    },
+    "STRC": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRD": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "net": 0,
+     "notional": 0,
+     "shares": 0
+    }
+   },
+   "btc": {
+    "holdings": 851305.0,
+    "purchased": 457.0,
+    "sold": 0
+   },
+   "buybackRemaining": 11.2,
+   "repurchases": {
+    "MSTR": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRC": {
+     "amount": 211.8,
+     "shares": 2183747.0
+    },
+    "STRD": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRF": {
+     "amount": 0,
+     "shares": 0
+    },
+    "STRK": {
+     "amount": 0,
+     "shares": 0
+    }
+   },
+   "reserveUses": [
+    {
+     "amount": 0.176,
+     "purpose": "the payment of dividends on its preferred stock"
+    }
+   ]
   }
  },
  "parserVersion": 3,
