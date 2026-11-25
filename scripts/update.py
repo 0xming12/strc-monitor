@@ -35,7 +35,7 @@ SEC_BASELINE = "2026-11-16"     # 这天及以前的事项类文件已经看过�
 BASELINE_ASOF = "2026-11-08"
 BASELINE_SHARES = {"STRF": 12840000, "STRC": 79930000, "STRE": 7750000, "STRK": 14021000, "STRD": 14024000}  # STRC 来自 11/08 投资者简报，其余来自 Q2 10-Q
 STATED_USD = {"STRF": 100.0, "STRC": 100.0, "STRE": 114.08, "STRK": 100.0, "STRD": 100.0}  # STRE 面值 100 欧元，按 6 月底的 8.841 亿美元 / 775 万股折算
-PARSER_VERSION = 3            # 改了解析规则就加 1，旧的解析缓存会作废重算
+PARSER_VERSION = 4            # 改了解析规则就加 1，旧的解析缓存会作废重算
 FIXED_RATES = {"STRF": 10.0, "STRE": 10.0, "STRK": 8.0, "STRD": 10.0}  # STRC 用公告里的利率
 CONVERTS_YI = 67.137          # 可转债合计（亿美元），有变动时改这里
 CONVERT_INTEREST_YI = 0.346   # 可转债每年利息（亿美元）
@@ -239,21 +239,41 @@ def parse_filing(h):
     if "btc" not in rec and re.search(r"did not purchase or sell any bitcoin", text):
         rec["btc"] = {"holdings": None, "purchased": 0, "sold": 0}
 
-    m = re.search(r"As of (\w+ \d{1,2}, \d{4}), the balances of the USD Reserve and USD Cash were \$([\d.,]+) (billion|million) and \$([\d.,]+) (billion|million)", text)
+    # 周报的标志。用来发现“看起来是周报、却没读出数据”的情况
+    rec["weeklyMarkers"] = bool(re.search(r"ATM Update|BTC Update|ATM and BTC Update|Repurchase Program Updates|USD Reserve and USD Cash Updates", text))
+
+    # 措辞会变，比如 11/23 的 8-K 在中间插了一句 “after giving effect to the reallocation,”。
+    # 所以先找余额那句话，再往前找最近的 “As of 日期”
+    m = (re.search(r"balances? of the USD Reserve and USD Cash (?:were|was) \$([\d.,]+) (billion|million),? and \$([\d.,]+) (billion|million)", text)
+         or re.search(r"USD Reserve (?:balance )?(?:was|of|totaled) \$([\d.,]+) (billion|million)[^$]{0,120}?USD Cash (?:balance )?(?:was|of|totaled) \$([\d.,]+) (billion|million)", text))
     if m:
-        rec["asOf"] = iso(m.group(1))
-        rec["usdReserve"] = money_yi(m.group(2), m.group(3))
-        rec["usdCash"] = money_yi(m.group(4), m.group(5))
+        rec["usdReserve"] = money_yi(m.group(1), m.group(2))
+        rec["usdCash"] = money_yi(m.group(3), m.group(4))
+        dates = re.findall(r"As of (\w+ \d{1,2}, \d{4})", text[max(0, m.start() - 300): m.start()])
+        if dates:
+            rec["usdAsOf"] = iso(dates[-1])
 
-    uses = [{"amount": money_yi(u.group(1), u.group(2)), "purpose": u.group(3).strip()}
-            for u in re.finditer(r"used \$([\d.,]+) (million|billion) of the USD Reserve to fund ([^.;]*)", text)]
-    if uses:
-        rec["reserveUses"] = uses
-    policy = re.search(r"[^.]{0,200}USD Reserve[^.]{0,200}(?:reduc|amend|modif|suspend|terminat|below (?:the )?12)[^.]{0,200}", text, re.I)
-    if policy:
-        rec["reservePolicyText"] = policy.group(0).strip()[:400]
+    # 数据截止日期：优先用余额那句话的日期，没有就用 “During Period A to B” 的 B
+    p = re.search(r"(?:During Period|during the period from) (\w+ \d{1,2}, \d{4}) (?:to|through) (\w+ \d{1,2}, \d{4})", text)
+    period_end = iso(p.group(2)) if p else None
+    as_of = rec.get("usdAsOf") or period_end
+    if as_of and any(k in rec for k in ("atm", "btc", "repurchases", "usdReserve")):
+        rec["asOf"] = as_of
 
-    m = re.search(r"\$([\d.,]+) (million|billion) aggregate purchase price of Strategy's preferred stock remains available", text, re.I)
+    # 例：“used $154.1 million of USD Cash to fund repurchases of STRC Stock and $13.0 million of USD Cash to fund purchases of bitcoin.”
+    for pool, key in (("Reserve", "reserveUses"), ("Cash", "cashUses")):
+        found = [{"amount": money_yi(u.group(1), u.group(2)), "purpose": u.group(3).strip()}
+                 for u in re.finditer(r"\$([\d.,]+) (million|billion) of (?:the )?USD %s to fund (.+?)(?= and \$|\.(?:\s|$)|;)" % pool, text)]
+        if found:
+            rec[key] = found
+    # 储备政策的调整：转到美元现金、降低下限、暂停等。逐句找，关键词在 “USD Reserve” 前后都算
+    for sentence in re.split(r"(?<=[a-z0-9)])\.\s+(?=[A-Z(])", text):
+        if "USD Reserve" in sentence and re.search(r"realloc|transfer|reduc|amend|modif|suspend|terminat|eliminat|withdraw|release|repurpos|below (?:the )?12", sentence, re.I) \
+                and not re.search(r"after giving effect to the realloc", sentence, re.I):
+            rec["reservePolicyText"] = sentence.strip()[:400]
+            break
+
+    m = re.search(r"\$([\d.,]+) (million|billion) aggregate purchase price (?:of Strategy's preferred stock )?remain(?:s|ed) available under (?:Strategy's |its |the )?digital credit", text, re.I)
     if m:
         rec["buybackRemaining"] = money_yi(m.group(1), m.group(2))
 
@@ -437,9 +457,23 @@ def build(filings_meta, parsed, prices, today):
                 add("reserve-" + w["acc"], w["filingDate"], "美元储备用途", [{"tier": "orange", "ev": "o_reserve", "code": "正文", "confirm": "确认储备被挪用",
                     "text": "美元储备用了 %.2f 亿美元，用途：%s" % (u["amount"], u["purpose"][:160])}], w["url"])
                 break
+        # 11/23 起美元现金里有从美元储备转过来的钱。一周内用在付息和回购优先股以外的地方（买 BTC、回购普通股、还可转债等）
+        # 合计超过 0.5 亿美元（约两周的股息）时要你确认；以前也有用美元现金零星买 BTC 的情况，金额小的不提醒
+        other = [u for u in (w.get("cashUses") or []) if not re.search(r"dividend|interest|preferred|STR[CFKDE]\b", u["purpose"], re.I)]
+        if sum(u["amount"] for u in other) >= 0.5:
+            desc = "；".join("%.2f 亿美元用于 %s" % (u["amount"], u["purpose"][:120]) for u in other)
+            add("cash-" + w["acc"], w["filingDate"], "美元现金用途", [{"tier": "orange", "ev": "o_reserve", "code": "正文", "confirm": "确认储备被挪用",
+                "text": "美元现金这周%s。美元现金里有从美元储备转过来的钱，用在付息和回购优先股以外的地方，可以按“美元储备被挪用”处理" % desc}], w["url"])
         if w.get("reservePolicyText"):
-            add("reserve-policy-" + w["acc"], w["filingDate"], "储备政策", [{"tier": "orange", "ev": "o_reserve", "code": "正文", "confirm": "确认储备政策变差",
-                "text": "提到美元储备政策的调整：" + w["reservePolicyText"][:240]}], w["url"])
+            i = weekly.index(w)
+            prev = weekly[i - 1] if i > 0 else {}
+            bal = ""
+            if w.get("usdReserve") is not None and prev.get("usdReserve") is not None:
+                bal = "本周美元储备 %.1f 亿、美元现金 %.1f 亿美元（上周 %.1f 亿、%.1f 亿），两项合计 %.1f 亿（上周 %.1f 亿）。" % (
+                    w["usdReserve"], w.get("usdCash") or 0, prev["usdReserve"], prev.get("usdCash") or 0,
+                    w["usdReserve"] + (w.get("usdCash") or 0), prev["usdReserve"] + (prev.get("usdCash") or 0))
+            add("reserve-policy-" + w["acc"], w["filingDate"], "储备政策", [{"tier": "orange", "ev": "o_reserve", "code": "正文", "confirm": "确认储备被挪用",
+                "text": "8-K 提到美元储备政策的调整。" + bal + "原文：" + w["reservePolicyText"][:240]}], w["url"])
 
     for prev, cur in zip(weekly, weekly[1:]):
         if cur["filingDate"] <= SEC_BASELINE:
@@ -485,6 +519,30 @@ def build(filings_meta, parsed, prices, today):
         "weekly": latest, "weeklyHistory": weekly[-12:], "prefs": prefs, "strcRate": strc_rate, "rateEvents": rate_events[-6:],
         "dividends": div_status, "buybackLowSince": low_since, "strcPrice": strc_price, "items": items,
     }
+
+
+def weekly_problems(scan, parsed, w, today):
+    """检查周报有没有读全。返回（网页顶部横幅显示的问题 {text, url} 或 None, 警告列表）。"""
+    problem, msgs = None, []
+    if not w:
+        msgs.append("没有解析到每周 8-K 的数据")
+    # 比最新周报更晚、看起来也是周报、却没读出数据的 8-K：说明措辞变了，数字会停在旧的一周
+    for f in scan:
+        p = parsed.get(f["acc"], {})
+        if f["form"].startswith("8-K") and p.get("weeklyMarkers") and not p.get("asOf") and (not w or f["date"] > w["filingDate"]):
+            msg = "%s 的 8-K 看起来是周报，但后台没读出里面的数字，页面上的数字还停在 %s。请打开这份 8-K 核对。" % (f["date"], w["asOf"] if w else "旧数据")
+            msgs.append(msg)
+            problem = problem or {"text": msg, "url": f["url"]}
+    if w and not problem:
+        names = {"btc": "BTC 持仓", "usdReserve": "美元储备和现金", "buybackRemaining": "回购剩余额度"}
+        missing = [names[k] for k in ("btc", "usdReserve", "buybackRemaining") if w.get(k) is None]
+        if missing:
+            msg = "%s 的周报 8-K 里没读出%s，这几项还是上一周的数字。请打开这份 8-K 核对。" % (w["filingDate"], "、".join(missing))
+            msgs.append(msg)
+            problem = {"text": msg, "url": w["url"]}
+        elif (today - dt.date.fromisoformat(w["asOf"])).days > 10:
+            msgs.append("最新一份周报 8-K 的数据截至 %s，已经超过 10 天，Strategy 之后没有发新的周报" % w["asOf"])
+    return problem, msgs
 
 
 # ---------- GitHub Issue 提醒 ----------
@@ -616,8 +674,11 @@ def main():
                 for it in sec_get(folder + "index.json", as_json=True)["directory"]["item"]:
                     name = it.get("name", "")
                     if re.search(r"ex[-_]?99", name, re.I) and name.lower().endswith((".htm", ".html")):
-                        for k, v in parse_filing(sec_get(folder + name)).items():
+                        ex = parse_filing(sec_get(folder + name))
+                        markers = rec.get("weeklyMarkers") or ex.get("weeklyMarkers")
+                        for k, v in ex.items():
                             rec.setdefault(k, v)
+                        rec["weeklyMarkers"] = bool(markers)
             parsed[f["acc"]] = rec
         except Exception as e:
             warn("解析 %s（%s）失败：%s" % (f["date"], f["acc"], e))
@@ -642,13 +703,9 @@ def main():
 
     out = build(scan, parsed, prices, today)
     w = out["weekly"]
-    if not w:
-        warn("没有解析到每周 8-K 的数据")
-    elif (today - dt.date.fromisoformat(w["asOf"])).days > 10:
-        warn("最新一份周报 8-K 的数据截至 %s，已经超过 10 天" % w["asOf"])
-    for key in ("btc", "usdReserve", "buybackRemaining"):
-        if w and w.get(key) is None:
-            warn("最新一份周报 8-K（%s）里没解析出 %s" % (w["filingDate"], key))
+    weekly_problem, msgs = weekly_problems(scan, parsed, w, today)
+    for msg in msgs:
+        warn(msg)
 
     latest8k = next((f for f in filings if f["form"].startswith("8-K")), None)
     payload = {
@@ -669,6 +726,7 @@ def main():
         "recentFilings": [{k: f[k] for k in ("acc", "date", "form", "items", "url")} for f in filings[:10]],
         "items": out["items"],
         "secBaseline": SEC_BASELINE,
+        "weeklyProblem": weekly_problem,
         "warnings": warnings,
     }
     payload["version"] = hashlib.sha1(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:12]
@@ -690,8 +748,10 @@ def main():
             continue
         auto = any(r.get("auto") for r in it["rules"])
         body = "\n".join("- %s：%s" % (r["code"], r["text"]) for r in it["rules"])
-        body += "\n\n" + ("页面已经自动按%s处理。" % TIER_LABEL[top] if auto else "需要你在页面上确认。") + ("\n\n文件：" + it["url"] if it.get("url") else "")
-        notes.append((it["acc"], top, "%s %s" % (it["date"], it["form"]), body))
+        body += "\n\n" + ("页面已经自动按%s处理。" % TIER_LABEL[top] if auto else "需要你在页面上确认：点“%s”按%s处理，或者点“看过了，没影响”。" % (
+            next((r.get("confirm") for r in it["rules"] if r.get("confirm")), "确认触发"), TIER_LABEL[top])) + ("\n\n文件：" + it["url"] if it.get("url") else "")
+        title = "%s %s" % (it["date"], it["form"]) if auto else "待确认：%s %s" % (it["date"], it["form"])
+        notes.append((it["acc"], top, title, body))
     notes += quant_notes(out, prices, state)
     sd = out["dividends"].get("STRC", {})
     if sd.get("status") == "late":
