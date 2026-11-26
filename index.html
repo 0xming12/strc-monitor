@@ -328,7 +328,7 @@
 
   <footer>
     <p>默认数据：Strategy 2026-11-16 的 8-K（截至 11 月 15 日）、STRC 投资者简报（2026-11-08）、Q2 2026 10-Q 的可转债条款。STRE 按欧元面值折算，是约数。</p>
-    <p>行情：BTC 和 USDT 价格来自 Coinbase，失败时改用 CoinGecko，页面打开时每 5 分钟刷新一次。放在 GitHub Pages 上时，8-K 里的数字、STRC 收盘价和自动检测由后台每 30 分钟更新一次（data/latest.json）；直接打开本地文件时，只能从 data.sec.gov 读文件列表，8-K 里的数字要手动填。</p>
+    <p>行情：BTC 和 USDT 价格来自 Coinbase，失败时改用 CoinGecko，页面打开时每 5 分钟刷新一次。放在 GitHub Pages 上时，8-K 里的数字、STRC 收盘价和自动检测由后台定时更新（data/latest.json，计划每 15 分钟一次，GitHub 繁忙时会推迟）；直接打开本地文件时，只能从 data.sec.gov 读文件列表，8-K 里的数字要手动填。</p>
     <p>参考链接：<a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=1050446&amp;type=8-K" target="_blank" rel="noopener noreferrer">Strategy 8-K（SEC EDGAR）</a> · <a href="https://www.strategy.com/strc" target="_blank" rel="noopener noreferrer">Strategy STRC 页面</a> · <a href="https://assets.contentstack.io/v3/assets/bltf8d808d9b8cebd37/blt23d718fe5cf3132e/6af10580d5357a6f41630472/STRC_Investor_Briefing_As_of_2026-11-08.pdf" target="_blank" rel="noopener noreferrer">STRC 投资者简报（11/08）</a></p>
     <p>覆盖倍数 = BTC 持仓 × BTC 价格 ÷（可转债 + 新增优先债权 + STRF + STRC − 美元储备 − 美元现金），与 Strategy 公布的 STRC “BTC Rating” 口径一致。以上不构成投资建议。</p>
   </footer>
@@ -410,7 +410,7 @@
     { id: 'o_ratecut', tier: 'orange', text: 'STRC 低于 100 美元时下调利率', how: '看每月 15 号左右的利率公告', mode: 'semi', autoText: '你在资本结构表里把 STRC 利率改低、且 STRC 价格低于 100 美元时自动勾选', bMode: 'auto', bText: '后台读每月的利率公告，STRC 收盘低于 100 美元时降息就自动勾选' },
     { id: 'o_terms', tier: 'orange', text: '提议修改 STRC 条款，比如允许用股票代替现金付息', how: '股东投票或修改指定证书的公告', mode: 'semi', autoText: '出现 Item 3.03、5.03 或股东大会代理声明时提醒你确认', bMode: 'semi', bText: '出现 Item 3.03、5.03 或股东大会代理声明时提醒你确认' },
     { id: 'o_issue', tier: 'orange', text: '在 100 美元以下增发 STRC', how: '每周 8-K 的 ATM 表里 STRC 的 Shares Sold', mode: 'manual', autoText: '要读 8-K 正文里的 ATM 表', bMode: 'semi', bText: '后台读每周 ATM 表，卖 STRC 每股净得低于 98.5 美元时提醒你确认' },
-    { id: 'o_reserve', tier: 'orange', text: '美元储备被挪去还本金、回购普通股等其他用途', how: '储备政策变更会有单独公告', mode: 'manual', autoText: '要读 8-K 正文', bMode: 'semi', bText: '后台读美元储备的用途和政策描述，出现付息以外的用途时提醒你确认' },
+    { id: 'o_reserve', tier: 'orange', text: '美元储备被挪去还本金、回购普通股等其他用途', how: '储备政策变更会有单独公告', mode: 'manual', autoText: '要读 8-K 正文', bMode: 'semi', bText: '后台读美元储备和美元现金的用途、储备政策的调整（比如把储备转到美元现金），出现付息和回购优先股以外的用途时提醒你确认' },
     { id: 'o_tether', tier: 'orange', text: 'Tether 暂停 USDT 赎回', how: '真暂停赎回的话，USDT 很快会脱锚', mode: 'semi', autoText: 'USDT 价格已自动检查，暂停赎回本身要看新闻', bMode: 'semi', bText: 'USDT 价格已自动检查，暂停赎回本身要看新闻' },
     { id: 'r_default', tier: 'red', text: '任何一笔可转债没有按时付息或付回售款', how: '可能触发交叉违约，其他可转债也可能被要求提前偿还', mode: 'auto', autoText: '出现 8-K Item 2.04（债务加速到期）时直接勾选', bMode: 'auto', bText: '出现 8-K Item 2.04（债务加速到期）时直接勾选' },
     { id: 'r_restructure', tier: 'red', text: '聘请重组顾问，或传出债务重组、破产保护的消息', how: '', mode: 'semi', autoText: '破产申请（Item 1.03）直接勾选，聘请重组顾问要看新闻', bMode: 'semi', bText: '破产申请（Item 1.03）直接勾选，聘请重组顾问要看新闻' },
@@ -547,6 +547,7 @@
   var refreshing = false;
   var backend = null;        // 后台生成的 data/latest.json（放在 GitHub Pages 上时才有）
   var backendMode = false;
+  var backendTried = false;  // 是否已经试过读取后台数据
 
   // ---------- 行情 ----------
   function fetchJSON(url, ms) {
@@ -676,6 +677,7 @@
 
   function refreshSec() {
     return loadBackend().then(function (j) {
+      backendTried = true;
       if (j) {
         backend = j;
         if (!backendMode) { backendMode = true; buildEvents(); }
@@ -857,7 +859,10 @@
       });
     });
     if (backend) {
-      (backend.warnings || []).forEach(function (wtxt) { hints.push('后台提示：' + wtxt); });
+      var wp = backend.weeklyProblem;
+      (backend.warnings || []).forEach(function (wtxt) {
+        if (!wp || wtxt !== wp.text) hints.push('后台提示：' + wtxt);  // 周报没读出来的问题已经显示在顶部横幅
+      });
       var bd = backend.dividends && backend.dividends.STRC;
       if (bd && bd.status === 'due') hints.push('STRC 的分红只宣告到 ' + bd.declaredThrough + '，还没看到下个月的宣告。过了期限还没有就是红色信号。');
       var chk = parseLocalDate(backend.checkedDate);
@@ -871,8 +876,9 @@
     if (sec) {
       var pendingCount = (sec.flagged || []).filter(function (f) { return !s.secReviews[f.acc]; }).length;
       if (pendingCount) hints.push('有 ' + pendingCount + ' 条自动检测结果需要你确认，见下方“' + (sec.fromBackend ? '自动检测（后台）' : 'SEC 文件监控') + '”。');
+      // 只在手动模式提示；后台模式下由后台判断新 8-K 是不是没读出来（显示在顶部横幅）
       var asOfD = parseLocalDate(s.asOf), l8 = sec.latest8K ? parseLocalDate(sec.latest8K.date) : null;
-      if (asOfD && l8 && daysBetween(asOfD, l8) > 1) {
+      if (!sec.fromBackend && asOfD && l8 && daysBetween(asOfD, l8) > 1) {
         hints.push({ text: 'Strategy 在 ' + fmtMD(l8) + '发了新的 8-K，你的数据截至 ' + fmtMD(asOfD) + '，记得更新。', url: filingUrl(sec.latest8K), label: '打开这份 8-K' });
       }
     }
@@ -1078,7 +1084,7 @@
   }
 
   var LOCAL_NOTE = '页面每 30 分钟从 SEC 读一次 Strategy 的文件列表。出现 8-K Item 1.03（破产）、2.04（债务加速到期）、4.02（财报重述）会直接按红色处理；Item 4.01、1.05、2.03、3.03、5.03 和股东大会代理声明会列在这里等你确认。浏览器读不到 8-K 正文，所以周报里的数字仍要手动填。';
-  var BACKEND_NOTE = '后台每 30 分钟运行一次：读 SEC 文件列表和 8-K 正文（周报数字、回购额度、分红宣告、利率公告、ATM 增发、美元储备用途），再抓 STRC 收盘价。能确定的信号直接勾选，其余列在这里等你确认。出现新信号时，GitHub 会开一个 Issue 通知你。';
+  var BACKEND_NOTE = '后台计划每 15 分钟运行一次（GitHub 繁忙时会推迟，有时隔几个小时）：读 SEC 文件列表和 8-K 正文（周报数字、回购额度、分红宣告、利率公告、ATM 增发、美元储备和美元现金的用途），再抓 STRC 收盘价。能确定的信号直接勾选，其余列在这里等你确认。出现新信号时，GitHub 会开一个 Issue 通知你。';
 
   function renderSec() {
     var sec = market.sec;
@@ -1238,8 +1244,22 @@
     var el = $('staleBanner');
     var d = parseLocalDate(state.asOf);
     var days = d ? Math.floor((c.today - d) / 86400000) : NaN;
-    if (isFinite(days) && days > 9) {
-      el.textContent = 'Strategy 数据截至 ' + state.asOf + '，已经 ' + days + ' 天没更新。请对照最新的 8-K 更新页面下方的数据。';
+    var msg = '', url = null;
+    if (!backend && !backendTried && location.protocol !== 'file:') {
+      // 后台数据还在加载，先不提示，免得闪一下“请手动更新”
+    } else if (backend) {
+      // 后台模式：数字由后台自动更新。只有后台没读出新周报，或者 Strategy 很久没发周报时才提示
+      if (backend.weeklyProblem) {
+        msg = backend.weeklyProblem.text;
+        url = backend.weeklyProblem.url;
+      } else if (isFinite(days) && days > 9) {
+        msg = 'Strategy 最近一份周报 8-K 的数据截至 ' + state.asOf + '，已经 ' + days + ' 天。后台 ' + (backend.checkedDate || '—') + ' 检查过，之后还没有新的周报。';
+      }
+    } else if (isFinite(days) && days > 9) {
+      msg = 'Strategy 数据截至 ' + state.asOf + '，已经 ' + days + ' 天没更新。请对照最新的 8-K 更新页面下方的数据。';
+    }
+    if (msg) {
+      replaceKids('staleBanner', [msg, url ? [' ', link(url, '打开这份 8-K')] : null]);
       el.classList.remove('hidden');
     } else {
       el.classList.add('hidden');

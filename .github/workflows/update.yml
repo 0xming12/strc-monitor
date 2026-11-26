@@ -2,13 +2,19 @@ name: 更新 STRC 监控数据
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # 每 30 分钟（UTC），GitHub 繁忙时可能会晚几分钟
+    # 计划每 15 分钟一次（UTC），避开整点和半点：那是 GitHub 定时任务最拥挤的时候，容易被推迟或跳过。
+    # GitHub 不保证准时，繁忙时可能隔几个小时才跑一次。
+    - cron: "7,22,37,52 * * * *"
+  push:                      # 脚本或定时任务有改动、合并到 main 时马上跑一次（后台自己提交的 data/ 不会触发）
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - ".github/workflows/update.yml"
   workflow_dispatch: {}      # 也可以在 Actions 页面手动运行
 
 permissions:
-  contents: write   # 把 data/ 的更新提交回仓库
+  contents: write   # 把 data/ 的更新提交回仓库（推送后 GitHub Pages 会自动重新构建）
   issues: write     # 出现新信号时开 Issue 提醒
-  pages: write      # 数据更新后请求 GitHub Pages 重新构建
 
 concurrency:
   group: strc-monitor-update
@@ -20,6 +26,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 用 main 的最新提交。排队等待的运行如果用触发时的旧提交，会拿到旧的提醒记录，重复开 Issue
+          ref: main
 
       - uses: actions/setup-python@v5
         with:
@@ -32,7 +41,6 @@ jobs:
         run: python scripts/update.py
 
       - name: 有变化时提交
-        id: commit
         if: always()
         run: |
           git config user.name "github-actions[bot]"
@@ -44,11 +52,4 @@ jobs:
             git commit -m "更新监控数据 $(date -u +'%Y-%m-%d %H:%M UTC')"
             git pull --rebase --autostash
             git push
-            echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: 请求 GitHub Pages 重新构建
-        if: steps.commit.outputs.pushed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" || echo "请求失败也没关系，GitHub 一般会自动重新构建"
