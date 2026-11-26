@@ -1,12 +1,17 @@
 {
  "coverageTier": "green",
- "notified": {},
+ "notified": {
+  "reserve-policy-0001193125-26-470961": "2026-11-26"
+ },
  "parsed": {
-  "0001050446-26-000047": {},
+  "0001050446-26-000047": {
+   "weeklyMarkers": false
+  },
   "0001193125-26-409863": {
    "declared": {
     "STRC": "2026-10-31"
-   }
+   },
+   "weeklyMarkers": false
   },
   "0001193125-26-413164": {
    "asOf": "2026-10-04",
@@ -43,6 +48,16 @@
     "sold": 0
    },
    "buybackRemaining": 6.209,
+   "cashUses": [
+    {
+     "amount": 1.541,
+     "purpose": "repurchases of STRC Stock"
+    },
+    {
+     "amount": 0.13,
+     "purpose": "purchases of bitcoin"
+    }
+   ],
    "repurchases": {
     "MSTR": {
      "amount": 0,
@@ -71,8 +86,10 @@
      "purpose": "dividends on its preferred stock and interest on its outstanding indebtedness"
     }
    ],
+   "usdAsOf": "2026-10-04",
    "usdCash": 8.334,
-   "usdReserve": 48.8
+   "usdReserve": 48.8,
+   "weeklyMarkers": true
   },
   "0001193125-26-419726": {
    "asOf": "2026-10-11",
@@ -109,6 +126,12 @@
     "sold": 0
    },
    "buybackRemaining": 3.548,
+   "cashUses": [
+    {
+     "amount": 0.005,
+     "purpose": "bitcoin purchases"
+    }
+   ],
    "repurchases": {
     "MSTR": {
      "amount": 0,
@@ -131,8 +154,10 @@
      "shares": 0
     }
    },
+   "usdAsOf": "2026-10-11",
    "usdCash": 6.405,
-   "usdReserve": 48.8
+   "usdReserve": 48.8,
+   "weeklyMarkers": true
   },
   "0001193125-26-423400": {
    "declared": {
@@ -142,7 +167,8 @@
     "from": "2026-11-01",
     "rate": 12.0,
     "through": "2026-11-30"
-   }
+   },
+   "weeklyMarkers": false
   },
   "0001193125-26-424688": {
    "asOf": "2026-10-18",
@@ -179,6 +205,16 @@
     "sold": 0
    },
    "buybackRemaining": 11.6,
+   "cashUses": [
+    {
+     "amount": 1.931,
+     "purpose": "repurchases of STRC Stock"
+    },
+    {
+     "amount": 0.001,
+     "purpose": "bitcoin purchases"
+    }
+   ],
    "repurchases": {
     "MSTR": {
      "amount": 0,
@@ -207,8 +243,10 @@
      "purpose": "the payment of dividends on its preferred stock"
     }
    ],
+   "usdAsOf": "2026-10-18",
    "usdCash": 4.473,
-   "usdReserve": 48.3
+   "usdReserve": 48.3,
+   "weeklyMarkers": true
   },
   "0001193125-26-431146": {
    "asOf": "2026-10-25",
@@ -219,6 +257,12 @@
     "sold": 0
    },
    "buybackRemaining": 9.568,
+   "cashUses": [
+    {
+     "amount": 2.049,
+     "purpose": "repurchases of STRC Stock"
+    }
+   ],
    "repurchases": {
     "MSTR": {
      "amount": 0,
@@ -241,11 +285,17 @@
      "shares": 0
     }
    },
+   "usdAsOf": "2026-10-25",
    "usdCash": 2.424,
-   "usdReserve": 48.3
+   "usdReserve": 48.3,
+   "weeklyMarkers": true
   },
-  "0001193125-26-435451": {},
-  "0001193125-26-437776": {},
+  "0001193125-26-435451": {
+   "weeklyMarkers": false
+  },
+  "0001193125-26-437776": {
+   "weeklyMarkers": false
+  },
   "0001193125-26-442707": {
    "asOf": "2026-11-01",
    "atm": {
@@ -281,6 +331,12 @@
     "sold": 0
    },
    "buybackRemaining": 7.486,
+   "cashUses": [
+    {
+     "amount": 2.082,
+     "purpose": "repurchases of STRC Stock"
+    }
+   ],
    "repurchases": {
     "MSTR": {
      "amount": 0,
@@ -309,8 +365,10 @@
      "purpose": "the payment of dividends on its preferred stock"
     }
    ],
+   "usdAsOf": "2026-11-01",
    "usdCash": 1.327,
-   "usdReserve": 47.9
+   "usdReserve": 47.9,
+   "weeklyMarkers": true
   },
   "0001193125-26-452693": {
    "asOf": "2026-11-08",
@@ -375,8 +433,10 @@
      "purpose": "the payment of dividends on its preferred stock"
     }
    ],
+   "usdAsOf": "2026-11-08",
    "usdCash": 1.462,
-   "usdReserve": 47.7
+   "usdReserve": 47.7,
+   "weeklyMarkers": true
   },
   "0001193125-26-462151": {
    "asOf": "2026-11-15",
@@ -453,10 +513,13 @@
     "rate": 12.0,
     "through": "2026-12-31"
    },
+   "usdAsOf": "2026-11-15",
    "usdCash": 1.512,
-   "usdReserve": 47.5
+   "usdReserve": 47.5,
+   "weeklyMarkers": true
   },
   "0001193125-26-470961": {
+   "asOf": "2026-11-22",
    "atm": {
     "MSTR": {
      "net": 176.7,
@@ -490,6 +553,12 @@
     "sold": 0
    },
    "buybackRemaining": 11.2,
+   "cashUses": [
+    {
+     "amount": 0.648,
+     "purpose": "repurchases of STRC Stock"
+    }
+   ],
    "repurchases": {
     "MSTR": {
      "amount": 0,
@@ -512,15 +581,20 @@
      "shares": 0
     }
    },
+   "reservePolicyText": "On November 23, 2026, Strategy announced that its board of directors authorized management to reallocate up to $1.0 billion from the USD Reserve to USD Cash",
    "reserveUses": [
     {
      "amount": 0.176,
      "purpose": "the payment of dividends on its preferred stock"
     }
-   ]
+   ],
+   "usdAsOf": "2026-11-22",
+   "usdCash": 10.9,
+   "usdReserve": 37.3,
+   "weeklyMarkers": true
   }
  },
- "parserVersion": 3,
+ "parserVersion": 4,
  "reserveTier": "green",
  "usdtBad": false
 }
