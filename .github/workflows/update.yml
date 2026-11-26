@@ -26,6 +26,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 用 main 的最新提交。排队等待的运行如果用触发时的旧提交，会拿到旧的提醒记录，重复开 Issue
+          ref: main
 
       - uses: actions/setup-python@v5
         with:

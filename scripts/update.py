@@ -254,7 +254,7 @@ def parse_filing(h):
             rec["usdAsOf"] = iso(dates[-1])
 
     # 数据截止日期：优先用余额那句话的日期，没有就用 “During Period A to B” 的 B
-    p = re.search(r"(?:During Period|during the period from) (\w+ \d{1,2}, \d{4}) (?:to|through) (\w+ \d{1,2}, \d{4})", text)
+    p = re.search(r"(?:During Period|During the period from) (\w+ \d{1,2}, \d{4}) (?:to|through) (\w+ \d{1,2}, \d{4})", text, re.I)
     period_end = iso(p.group(2)) if p else None
     as_of = rec.get("usdAsOf") or period_end
     if as_of and any(k in rec for k in ("atm", "btc", "repurchases", "usdReserve")):
@@ -335,15 +335,23 @@ def strc_closes():
     r = j["chart"]["result"][0]
     ny = ZoneInfo("America/New_York")
     now = dt.datetime.now(ny)
-    out = []
-    for ts, c in zip(r["timestamp"], r["indicators"]["quote"][0]["close"]):
+    out = {}
+    for ts, c in zip(r.get("timestamp") or [], r["indicators"]["quote"][0].get("close") or []):
         if c is None:
             continue
         d = dt.datetime.fromtimestamp(ts, ny).date()
         if d == now.date() and (now.hour, now.minute) < (16, 15):
             continue  # 今天还没收盘
-        out.append((d.isoformat(), round(float(c), 2)))
-    return out
+        out[d.isoformat()] = round(float(c), 2)
+    # Yahoo 有时把最新一根日线的收盘价留空（2026-11-25 收盘后就是这样），这时用 meta 里的收盘价补上。
+    # regularMarketTime 在 16:00 以后才算收盘价，盘中的价格不用
+    meta = r.get("meta") or {}
+    px, t = meta.get("regularMarketPrice"), meta.get("regularMarketTime")
+    if px and t:
+        mt = dt.datetime.fromtimestamp(t, ny)
+        if (mt.hour, mt.minute) >= (16, 0):
+            out.setdefault(mt.date().isoformat(), round(float(px), 2))
+    return sorted(out.items())
 
 
 def btc_weekly_closes():
