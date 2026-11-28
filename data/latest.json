@@ -35,8 +35,8 @@
   "rate": 12.0,
   "rateFrom": "2026-11-01",
   "rateThrough": "2026-11-30",
-  "price": 98.04,
-  "priceDate": "2026-11-25"
+  "price": 98.9,
+  "priceDate": "2026-11-27"
  },
  "dividends": {
   "STRC": {
@@ -251,7 +251,7 @@
  "secBaseline": "2026-11-16",
  "weeklyProblem": null,
  "warnings": [],
- "version": "62bde55b52c7",
+ "version": "dc08238147c5",
  "checkedDate": "2026-11-27",
- "generatedAt": "2026-11-27T11:28:44Z"
+ "generatedAt": "2026-11-28T02:49:12Z"
 }
